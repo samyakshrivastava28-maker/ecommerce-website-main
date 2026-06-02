@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { MessageSquare, X } from 'lucide-react';
+import { useAppStore } from '../store/appStore';
 
 interface ChatMessage {
   id: string;
@@ -16,6 +17,7 @@ export const SupportAssistant = ({ hasCart = false }: { hasCart?: boolean }) => 
     { id: '1', role: 'bot', text: 'Welcome to Prime Elite Store. How may I assist you with our luxury electronics collection today?' }
   ]);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const { products } = useAppStore();
 
   useEffect(() => {
     // Show popup every 30 seconds if not already open
@@ -33,30 +35,35 @@ export const SupportAssistant = ({ hasCart = false }: { hasCart?: boolean }) => 
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages, isOpen]);
 
-  const handleSend = () => {
+  const handleSend = async () => {
     if (!inputVal.trim()) return;
 
     const userMsg = inputVal.trim();
-    setMessages(prev => [...prev, { id: Date.now().toString(), role: 'user', text: userMsg }]);
+    const newMessages = [...messages, { id: Date.now().toString(), role: 'user' as const, text: userMsg }];
+    setMessages(newMessages);
     setInputVal('');
 
-    // Simulate smart bot response
-    setTimeout(() => {
-      let botResponse = "I'm sorry, I'm an AI assistant in training. For precise queries, please use our contact page or WhatsApp support: 6263629683.";
-      
-      const lower = userMsg.toLowerCase();
-      if (lower.includes('minimum') || lower.includes('quantity')) {
-        botResponse = "Our minimum order quantity is strictly 2 products across the catalogue. This allows us to ensure premium processing for all clients.";
-      } else if (lower.includes('payment') || lower.includes('advance')) {
-        botResponse = "We require a 50% advance payment upfront before processing your luxury electronic orders. The remaining 50% is handled post-processing.";
-      } else if (lower.includes('delivery') || lower.includes('shipping')) {
-        botResponse = "We provide expedited shipping on all our premium orders globally securely packaged to remain immaculate.";
-      } else if (lower.includes('hello') || lower.includes('hi')) {
-        botResponse = "Hello! Welcome to the Prime Elite premium collection. Are you looking for smart watches or audio gear today?";
-      }
+    try {
+      const response = await fetch('/api/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          message: userMsg,
+          history: messages.slice(1), // exclude the first hardcoded welcome message
+          products: products // actual dynamic products added by admin from Firestore database
+        })
+      });
 
-      setMessages(prev => [...prev, { id: Date.now().toString() + 'bot', role: 'bot', text: botResponse }]);
-    }, 1000);
+      const data = await response.json();
+      
+      if (response.ok && data.reply) {
+        setMessages(prev => [...prev, { id: Date.now().toString() + 'bot', role: 'bot', text: data.reply }]);
+      } else {
+        setMessages(prev => [...prev, { id: Date.now().toString() + 'bot', role: 'bot', text: data.error || "Sorry, I'm having trouble connecting to the server." }]);
+      }
+    } catch (error) {
+      setMessages(prev => [...prev, { id: Date.now().toString() + 'bot', role: 'bot', text: "Sorry, there was a network error." }]);
+    }
   };
 
   return (

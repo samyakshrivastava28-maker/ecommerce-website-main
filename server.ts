@@ -97,6 +97,97 @@ async function startServer() {
     }
   });
 
+  // API for Gemini Support Chat
+  app.post("/api/chat", async (req, res) => {
+    try {
+      const { message, history, products } = req.body;
+      const { GoogleGenAI } = await import("@google/genai");
+
+      const apiKey = process.env.GEMINI_API_KEY;
+      if (!apiKey) {
+        return res.status(500).json({ error: "Gemini API key is not configured on the server." });
+      }
+
+      const ai = new GoogleGenAI({ 
+        apiKey,
+        httpOptions: {
+          headers: {
+            'User-Agent': 'aistudio-build',
+          }
+        }
+      });
+
+      // Construct dynamic product list from admin/website products passed in or loaded
+      let productsCatalogText = "The store catalog is currently being updated by the administrator.";
+      if (Array.isArray(products) && products.length > 0) {
+        productsCatalogText = products.map((item: any, idx: number) => {
+          const name = item.productName || "Unnamed Product";
+          const pCategory = item.category || "Luxury Electronics";
+          const priceStr = item.price ? `₹${item.price.toLocaleString()}` : "Contact Support";
+          const oldPriceStr = item.oldPrice ? `₹${item.oldPrice.toLocaleString()}` : "N/A";
+          const discountStr = item.offerPercentage ? `${item.offerPercentage}% Off` : "N/A";
+          const badgeStr = item.badge || "Standard Edition";
+          const minQtyStr = item.moq || 2;
+          const advanceStr = item.advanceBooking || "50% upfront booking payment required";
+          const descStr = item.description || "Premium luxury product.";
+          
+          let variantsInfo = "Standard";
+          if (item.variants && item.variants.length > 0) {
+            variantsInfo = item.variants.map((v: any) => v.color || "Default").join(", ");
+          } else if (item.colors && item.colors.length > 0) {
+            variantsInfo = item.colors.join(", ");
+          }
+
+          return `${idx + 1}. Product Name: ${name}
+   - Category: ${pCategory}
+   - Price: ${priceStr} (Original Price: ${oldPriceStr} | Offer: ${discountStr})
+   - Badge/Label: ${badgeStr}
+   - Minimum Order Quantity (MOQ): ${minQtyStr}
+   - Advance Booking Requirement: ${advanceStr}
+   - Description: ${descStr}
+   - Available Variants/Colors: ${variantsInfo}`;
+        }).join("\n\n");
+      }
+
+      const systemInstruction = `You are "Prime Elite Store AI Assistant", a highly professional, polite, and luxury-oriented support assistant for "Prime Elite Store" (an elite collection of luxury watches and hardware accessories).
+
+Store Policy & Critical Info:
+- Minimum Order Quantity (MOQ): We strictly enforce a Minimum Order Quantity (MOQ) as specified on each product (usually 2 products across the catalog unless stated otherwise).
+- Advance Booking Policy: To ensure premium processing, we require 50% advance booking payment upfront before an order is processed, and the remaining 50% is paid post-processing/dispatch.
+- Global Expedited Shipping: Fast global expedited shipping is offered on all premium orders.
+- Manual Ordering & Support: For direct manual billing, custom order updates, or inquiries, customers can reached us via WhatsApp at 6263629683.
+
+Product Catalog Information (Website Dynamic Products added by Admin):
+${productsCatalogText}
+
+Response Guidelines:
+- Store Questions: If a user asks about available items, product descriptions, pricing, discount offers, variants, or store shipping/booking policies, answer them accurately based strictly on the Dynamic Products list above.
+- Outside / General Questions: If a user asks any question outside of the store (e.g., general knowledge, helping with code, explaining facts, writing, or recipes), you must act as a fully capable, helpful AI assistant and answer them clearly and politely. Do NOT decline or say you can only talk about the store.
+- Tone: Keep responses warm, sophisticated, professional, and concise. Use clean markdown formatting (like bold text or bullet points) to keep responses highly readable in a chat widget.`;
+
+      const formattedHistory = history ? history.map((msg: any) => ({
+        role: msg.role === 'bot' ? 'model' : 'user',
+        parts: [{ text: msg.text }]
+      })) : [];
+
+      formattedHistory.push({ role: 'user', parts: [{ text: message }] });
+
+      const response = await ai.models.generateContent({
+        model: "gemini-3.5-flash",
+        contents: formattedHistory,
+        config: {
+          systemInstruction,
+          temperature: 0.7,
+        }
+      });
+
+      res.json({ reply: response.text });
+    } catch (error: any) {
+      console.error("Chat API Error:", error);
+      res.status(500).json({ error: error.message || "Failed to generate response." });
+    }
+  });
+
   // Serve static client assets or integrate Vite dev-middleware
   if (process.env.NODE_ENV !== "production") {
     console.log("[Server] Mounting dynamic Vite dev-server middleware...");
