@@ -196,11 +196,9 @@ export const Products = () => {
              )}
            </div>
 
-           {/* Floating Tap for info text */}
-           <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center pointer-events-none">
-             <span className="bg-black/80 backdrop-blur-md text-white text-[10px] md:text-xs font-bold uppercase tracking-widest px-4 py-2 rounded-full border border-white/20 shadow-2xl translate-y-4 group-hover:translate-y-0 transition-all duration-300">
-               Tap for more information
-             </span>
+           {/* Always visible instruction overlay */}
+           <div className="absolute font-sans bottom-2 left-1/2 -translate-x-1/2 whitespace-nowrap bg-black/70 backdrop-blur-md text-white/90 text-[8px] md:text-[10px] uppercase tracking-widest px-3 py-1.5 rounded-full border border-white/10 shadow-lg pointer-events-none flex items-center justify-center opacity-80 group-hover:opacity-100 transition-opacity">
+             Tap image for more information
            </div>
         </Link>
         

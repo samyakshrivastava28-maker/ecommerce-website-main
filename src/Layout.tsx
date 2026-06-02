@@ -27,8 +27,8 @@ export const Layout = () => {
   
   const isRestrictedRoute = ['/products', '/checkout', '/cart'].some(route => location.pathname.startsWith(route));
 
-  // Do not show floating cart on the actual cart page to prevent duplication
-  const hideFloatingCart = location.pathname === '/cart' || items.length === 0;
+  // Do not show floating cart on the actual checkout page to prevent duplication
+  const hideFloatingCart = location.pathname === '/checkout' || items.length === 0;
 
   const totalCartItems = items.reduce((acc, item) => acc + item.quantity, 0);
   const totalCartValue = items.reduce((acc, item) => acc + (item.price * item.quantity), 0);
@@ -174,12 +174,12 @@ export const Layout = () => {
               <span className="text-white font-mono font-medium">₹{totalCartValue.toLocaleString()}</span>
             </div>
 
-            <button
-              onClick={() => navigate('/cart')}
-              className="w-full gold-gradient-bg text-black font-bold uppercase tracking-widest text-xs py-3 rounded-lg hover:shadow-lg transition-all active:scale-95 text-center mt-1"
+            <Link
+              to="/checkout"
+              className="block w-full gold-gradient-bg text-black font-bold uppercase tracking-widest text-xs py-3 rounded-lg hover:shadow-lg transition-all active:scale-95 text-center mt-1"
             >
               View Cart
-            </button>
+            </Link>
           </motion.div>
         )}
       </AnimatePresence>
