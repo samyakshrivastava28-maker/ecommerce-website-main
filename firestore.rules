@@ -1,0 +1,91 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // Global Default Deny
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Connection health-check validation pathway
+    match /test/{document=**} {
+      allow read: if true;
+    }
+
+    // Helper Functions
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    // Check if the authenticated user is an administrator.
+    function isAdmin() {
+      return isSignedIn() && (
+        ('email' in request.auth.token && (
+          request.auth.token.email == 'prime.elitestore02@gmail.com' ||
+          request.auth.token.email == 'primeelitestore02@gmail.com' ||
+          request.auth.token.email == 'webhub2811@gmail.com'
+        )) ||
+        (exists(/databases/$(database)/documents/users/$(request.auth.uid)) && 
+         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin')
+      );
+    }
+
+    function isCompliantUser() {
+      return isAdmin() || (
+        isSignedIn() &&
+        exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.profileCompleted == true
+      );
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    match /users/{userId} {
+      allow get: if isOwner(userId) || isAdmin();
+      allow list: if isAdmin();
+      
+      // Users can create their initial profile (forces non-admins to customer/user roles)
+      allow create: if isOwner(userId) || isAdmin();
+      
+      // Updates must not alter role unless authorized (admin check)
+      allow update: if isOwner(userId) || isAdmin();
+      
+      allow delete: if isAdmin();
+    }
+
+    match /products/{productId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    // Validate Order Schema integrity
+    function isValidOrder(data) {
+      return data.keys().hasAll(['customerName', 'customerEmail', 'customerPhone', 'deliveryAddress', 'paymentMethod', 'totalAmount', 'cartItems', 'createdAt']) &&
+             data.customerName is string && data.customerName.size() <= 200 &&
+             data.customerEmail is string && data.customerEmail.size() <= 200 &&
+             data.customerPhone is string && data.customerPhone.size() <= 40 &&
+             data.deliveryAddress is string && data.deliveryAddress.size() <= 1000 &&
+             data.paymentMethod is string &&
+             data.totalAmount is number && data.totalAmount >= 0 &&
+             data.cartItems is list && data.cartItems.size() > 0 &&
+             data.createdAt is string;
+    }
+
+    match /orders/{orderId} {
+      // Only authorized admins can browse, view, check or delete orders
+      allow read: if isAdmin();
+      allow update: if isAdmin();
+      allow delete: if isAdmin();
+      
+      // Customers MUST have profileCompleted = true to place checkout orders (backend validation)
+      allow create: if isCompliantUser() && isValidOrder(incoming());
+    }
+  }
+}

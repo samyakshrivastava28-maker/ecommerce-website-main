@@ -1,0 +1,84 @@
+{
+  "entities": {
+    "User": {
+      "title": "User Profile",
+      "description": "User profile with email and role",
+      "type": "object",
+      "properties": {
+        "email": { "type": "string" },
+        "name": { "type": "string" },
+        "phone": { "type": "string" },
+        "role": { "type": "string", "enum": ["user", "admin"] },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["email", "role"]
+    },
+    "Product": {
+      "title": "Product",
+      "description": "Store product",
+      "type": "object",
+      "properties": {
+        "productName": { "type": "string" },
+        "description": { "type": "string" },
+        "category": { "type": "string" },
+        "price": { "type": "number" },
+        "oldPrice": { "type": "number" },
+        "offerPercentage": { "type": "number" },
+        "stock": { "type": "number" },
+        "imageUrls": { "type": "array", "items": { "type": "string" } },
+        "videoUrls": { "type": "array", "items": { "type": "string" } },
+        "featured": { "type": "boolean" },
+        "trending": { "type": "boolean" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "badge": { "type": "string" },
+        "moq": { "type": "number" },
+        "advanceBooking": { "type": "string" },
+        "colors": { "type": "array", "items": { "type": "string" } },
+        "variants": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "color": { "type": "string" },
+              "image": { "type": "string" },
+              "video": { "type": "string" }
+            },
+            "required": ["color", "image"]
+          }
+        }
+      },
+      "required": ["productName", "price", "stock", "category"]
+    },
+    "Order": {
+      "title": "Order",
+      "description": "User order",
+      "type": "object",
+      "properties": {
+        "customerName": { "type": "string" },
+        "customerEmail": { "type": "string" },
+        "customerPhone": { "type": "string" },
+        "deliveryAddress": { "type": "string" },
+        "cartItems": { "type": "array" },
+        "totalAmount": { "type": "number" },
+        "paymentMethod": { "type": "string" },
+        "status": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["customerName", "customerEmail", "customerPhone", "deliveryAddress", "cartItems", "totalAmount"]
+    }
+  },
+  "firestore": {
+    "users/{userId}": {
+      "schema": { "$ref": "#/entities/User" },
+      "description": "User profiles"
+    },
+    "products/{productId}": {
+      "schema": { "$ref": "#/entities/Product" },
+      "description": "Catalog of products"
+    },
+    "orders/{orderId}": {
+      "schema": { "$ref": "#/entities/Order" },
+      "description": "Customer orders"
+    }
+  }
+}

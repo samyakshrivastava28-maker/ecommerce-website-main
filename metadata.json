@@ -1,0 +1,8 @@
+{
+  "name": "Remix: Prime Elite Store main",
+  "description": "A Premium Small Electronics Selling Company\n",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}
