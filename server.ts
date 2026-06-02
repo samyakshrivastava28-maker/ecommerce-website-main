@@ -12,7 +12,7 @@ async function startServer() {
   const app = express();
   const PORT = Number(process.env.PORT) || 3000;
 
-  app.use(cors({ origin: ['https://testingprime.netlify.app', 'http://localhost:5173', 'http://localhost:3000'], credentials: true }));
+  app.use(cors());
   app.use(express.json());
 
   // Basic health check endpoint

@@ -28,6 +28,7 @@ export const PhoneNumberRequiredPage = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (loading) return;
     setError('');
     
     if (!user) {
