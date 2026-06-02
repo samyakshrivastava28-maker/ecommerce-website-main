@@ -89,14 +89,18 @@ export const Navbar = () => {
           {user ? (
             <div className="flex items-center gap-3">
               <div 
-                className="w-8 h-8 rounded-full overflow-hidden border border-gold-500/30 hidden sm:flex items-center justify-center bg-zinc-900" 
+                className="w-8 h-8 rounded-full overflow-hidden border border-gold-500/30 flex items-center justify-center bg-zinc-900" 
                 title={user.email || user.name}
               >
-                <img 
-                  src={`https://ui-avatars.com/api/?name=${encodeURIComponent(user.email || user.name || 'User')}&background=d4af37&color=000`} 
-                  alt="Profile" 
-                  className="w-full h-full object-cover" 
-                />
+                {user.photoURL ? (
+                  <img src={user.photoURL} alt="Profile" className="w-full h-full object-cover" referrerPolicy="no-referrer" />
+                ) : (
+                  <img 
+                    src={`https://ui-avatars.com/api/?name=${encodeURIComponent(user.email || user.name || 'User')}&background=d4af37&color=000`} 
+                    alt="Profile" 
+                    className="w-full h-full object-cover" 
+                  />
+                )}
               </div>
               <button 
                 onClick={() => {

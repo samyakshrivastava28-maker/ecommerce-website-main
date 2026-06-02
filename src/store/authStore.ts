@@ -7,6 +7,7 @@ interface UserProfile {
   uid: string;
   email: string | null;
   name?: string;
+  photoURL?: string | null;
   phone?: string;
   phoneNumber?: string;
   phoneVerified?: boolean;
@@ -63,6 +64,7 @@ export const useAuthStore = create<AuthState>((set) => {
                   uid: firebaseUser.uid,
                   email: firebaseUser.email,
                   name: data.name || firebaseUser.displayName || 'Customer',
+                  photoURL: data.photoURL || firebaseUser.photoURL || null,
                   phone,
                   phoneNumber: data.phoneNumber || data.phone || '',
                   phoneVerified: data.phoneVerified || false,
@@ -81,6 +83,7 @@ export const useAuthStore = create<AuthState>((set) => {
                   uid: firebaseUser.uid,
                   email: firebaseUser.email,
                   name: firebaseUser.displayName || 'Customer',
+                  photoURL: firebaseUser.photoURL || null,
                   phone: firebaseUser.phoneNumber || '',
                   phoneNumber: firebaseUser.phoneNumber || '',
                   phoneVerified: false,
@@ -106,6 +109,7 @@ export const useAuthStore = create<AuthState>((set) => {
                   uid: firebaseUser.uid,
                   email: firebaseUser.email,
                   name: firebaseUser.displayName || 'Customer',
+                  photoURL: firebaseUser.photoURL || null,
                   phone: firebaseUser.phoneNumber || '',
                   phoneNumber: firebaseUser.phoneNumber || '',
                   phoneVerified: false,
@@ -129,6 +133,7 @@ export const useAuthStore = create<AuthState>((set) => {
                     uid: firebaseUser.uid,
                     email: firebaseUser.email,
                     name: firebaseUser.displayName || 'Customer',
+                    photoURL: firebaseUser.photoURL || null,
                     phone: firebaseUser.phoneNumber || '',
                     phoneNumber: firebaseUser.phoneNumber || '',
                     phoneVerified: false,
