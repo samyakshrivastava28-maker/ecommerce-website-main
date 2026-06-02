@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useCartStore } from '../store/cartStore';
 import { useAuthStore } from '../store/authStore';
-import { sendAdminOrderEmail } from '../utils/email';
+import { sendAdminOrderEmail, sendCustomerConfirmationEmail } from '../utils/email';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { collection, addDoc } from 'firebase/firestore';
@@ -94,6 +94,16 @@ export const Checkout = () => {
         });
       } catch (emailErr) {
         console.error("Failed to send admin notification email:", emailErr);
+      }
+
+      // Dispatch real-time Customer confirmation email
+      try {
+        await sendCustomerConfirmationEmail({
+          id: orderId,
+          ...orderDoc
+        });
+      } catch (emailErr) {
+        console.error("Failed to send customer notification email:", emailErr);
       }
       
       alert(`Order Placed Successfully! We have dispatched a confirmation email to ${formData.email}.`);

@@ -1,7 +1,7 @@
 import emailjsBrowser from '@emailjs/browser';
 
 // We will use our Express backend to dispatch emails securely to protect keys
-const BACKEND_URL = import.meta.env.VITE_API_URL || (import.meta.env.DEV ? '' : 'https://primeelitestore02.onrender.com');
+const BACKEND_URL = '';
 
 export const sendSignupEmail = async (userName: string, userEmail: string, userPhone: string = '', signupDate: string = '') => {
   try {
@@ -79,6 +79,18 @@ export const sendAdminOrderEmail = async (orderData: any) => {
       </table>
       <div style="background-color: #0c0c0c; border: 1px solid #151515; padding: 16px; border-radius: 8px; margin-bottom: 12px;">
         <table style="width: 100%; border-collapse: collapse; font-size: 13px;">
+          <tr>
+            <td style="padding: 4px 0; color: #888;">Customer Name:</td>
+            <td style="padding: 4px 0; text-align: right; font-weight: bold; color: #fff;">${orderData.customerName}</td>
+          </tr>
+          <tr>
+            <td style="padding: 4px 0; color: #888;">Phone Number:</td>
+            <td style="padding: 4px 0; text-align: right; font-weight: bold; color: #fff;">${orderData.customerPhone}</td>
+          </tr>
+          <tr>
+            <td style="padding: 4px 0; color: #888; vertical-align: top;">Delivery Address:</td>
+            <td style="padding: 4px 0; text-align: right; font-weight: bold; color: #fff;">${orderData.deliveryAddress}</td>
+          </tr>
           <tr>
             <td style="padding: 4px 0; color: #888;">Total Products:</td>
             <td style="padding: 4px 0; text-align: right; font-weight: bold; color: #fff;">${orderData.cartItems.reduce((acc: number, item: any) => acc + item.quantity, 0)}</td>
@@ -172,6 +184,18 @@ export const sendCustomerConfirmationEmail = async (orderData: any) => {
         <p style="margin: 8px 0; font-size: 14px; color: #555;">
           Order ID:<br/>
           <strong style="color: #000;">${orderData.id || 'N/A'}</strong>
+        </p>
+        <p style="margin: 8px 0; font-size: 14px; color: #555;">
+          Customer Name:<br/>
+          <strong style="color: #000;">${orderData.customerName}</strong>
+        </p>
+        <p style="margin: 8px 0; font-size: 14px; color: #555;">
+          Phone Number:<br/>
+          <strong style="color: #000;">${orderData.customerPhone}</strong>
+        </p>
+        <p style="margin: 8px 0; font-size: 14px; color: #555;">
+          Delivery Address:<br/>
+          <strong style="color: #000;">${orderData.deliveryAddress}</strong>
         </p>
         <p style="margin: 8px 0; font-size: 14px; color: #555;">
           Payment Method:<br/>
