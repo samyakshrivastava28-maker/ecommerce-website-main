@@ -44,7 +44,8 @@ export const SupportAssistant = ({ hasCart = false }: { hasCart?: boolean }) => 
     setInputVal('');
 
     try {
-      const response = await fetch('/api/chat', {
+      const baseUrl = (import.meta.env.VITE_API_URL || '').replace(/\/$/, '');
+      const response = await fetch(`${baseUrl}/api/chat`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

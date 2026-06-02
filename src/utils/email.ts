@@ -3,106 +3,84 @@ import emailjsBrowser from '@emailjs/browser';
 // EmailJS Keys
 const EMAIL_CONFIG = {
   signup: {
-    serviceId: 'service_xavwsdd',
-    templateUser: 'template_bnv795b',
-    templateAdmin: 'template_yov75k3',
-    publicKey: 'xdiix4UI5x2P7LVE2'
+    serviceId: import.meta.env.VITE_EMAIL_SIGNUP_SERVICE_ID || 'service_xavwsdd',
+    templateUser: import.meta.env.VITE_EMAIL_SIGNUP_TEMPLATE_USER || 'template_bnv795b',
+    templateAdmin: import.meta.env.VITE_EMAIL_SIGNUP_TEMPLATE_ADMIN || 'template_yov75k3',
+    publicKey: import.meta.env.VITE_EMAIL_SIGNUP_PUBLIC_KEY || 'xdiix4UI5x2P7LVE2'
   },
   login: {
-    serviceId: 'service_3mc4i0a',
-    templateUser: 'template_qe2gx2m',
-    templateAdmin: 'template_8kcg56c',
-    publicKey: 'z23jLy3RVmEUYUin6'
+    serviceId: import.meta.env.VITE_EMAIL_LOGIN_SERVICE_ID || 'service_3mc4i0a',
+    templateUser: import.meta.env.VITE_EMAIL_LOGIN_TEMPLATE_USER || 'template_qe2gx2m',
+    templateAdmin: import.meta.env.VITE_EMAIL_LOGIN_TEMPLATE_ADMIN || 'template_8kcg56c',
+    publicKey: import.meta.env.VITE_EMAIL_LOGIN_PUBLIC_KEY || 'z23jLy3RVmEUYUin6'
   },
   order: {
-    serviceId: 'service_a8w9xi7',
-    templateCustomer: 'template_pem4aev',
-    templateAdmin: 'template_r5nxgqn',
-    publicKey: 'Buuw2UTdprSoJ3wVu'
+    serviceId: import.meta.env.VITE_EMAIL_ORDER_SERVICE_ID || 'service_a8w9xi7',
+    templateCustomer: import.meta.env.VITE_EMAIL_ORDER_TEMPLATE_CUSTOMER || 'template_pem4aev',
+    templateAdmin: import.meta.env.VITE_EMAIL_ORDER_TEMPLATE_ADMIN || 'template_r5nxgqn',
+    publicKey: import.meta.env.VITE_EMAIL_ORDER_PUBLIC_KEY || 'Buuw2UTdprSoJ3wVu'
   }
 };
 
 export const sendSignupEmail = async (userName: string, userEmail: string, userPhone: string = '', signupDate: string = '') => {
   try {
-    const response = await fetch('/api/email/signup', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ userName, userEmail, userPhone, signupDate })
-    });
-    if (!response.ok) {
-      throw new Error(`Server status ${response.status}`);
-    }
+    const templateParams = {
+      user_name: userName,
+      user_email: userEmail,
+      user_phone: userPhone,
+      signup_date: signupDate || new Date().toLocaleString()
+    };
+    
+    await emailjsBrowser.send(
+      EMAIL_CONFIG.signup.serviceId,
+      EMAIL_CONFIG.signup.templateUser,
+      templateParams,
+      EMAIL_CONFIG.signup.publicKey
+    );
+    
+    await emailjsBrowser.send(
+      EMAIL_CONFIG.signup.serviceId,
+      EMAIL_CONFIG.signup.templateAdmin,
+      {
+        ...templateParams,
+        admin_email: 'prime.elitestore02@gmail.com'
+      },
+      EMAIL_CONFIG.signup.publicKey
+    );
+    console.log('[Email] Direct fast signup emails dispatched successfully.');
   } catch (error) {
-    console.error('[Email] API Signup dispatch failed, using direct browser fallback:', error);
-    try {
-      const templateParams = {
-        user_name: userName,
-        user_email: userEmail,
-        user_phone: userPhone,
-        signup_date: signupDate || new Date().toLocaleString()
-      };
-      
-      await emailjsBrowser.send(
-        EMAIL_CONFIG.signup.serviceId,
-        EMAIL_CONFIG.signup.templateUser,
-        templateParams,
-        EMAIL_CONFIG.signup.publicKey
-      );
-      
-      await emailjsBrowser.send(
-        EMAIL_CONFIG.signup.serviceId,
-        EMAIL_CONFIG.signup.templateAdmin,
-        {
-          ...templateParams,
-          admin_email: 'prime.elitestore02@gmail.com'
-        },
-        EMAIL_CONFIG.signup.publicKey
-      );
-    } catch (fallbackError) {
-      console.error('[Email] Direct browser signup fallback failed:', fallbackError);
-    }
+    console.error('[Email] Direct browser signup dispatch failed:', error);
   }
 };
 
 export const sendLoginEmail = async (userName: string, userEmail: string, userPhone: string = '') => {
   try {
-    const response = await fetch('/api/email/login', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ userName, userEmail, userPhone })
-    });
-    if (!response.ok) {
-      throw new Error(`Server status ${response.status}`);
-    }
+    const templateParams = {
+      user_name: userName,
+      user_email: userEmail,
+      user_phone: userPhone,
+      login_time: new Date().toLocaleString()
+    };
+    
+    await emailjsBrowser.send(
+      EMAIL_CONFIG.login.serviceId,
+      EMAIL_CONFIG.login.templateUser,
+      templateParams,
+      EMAIL_CONFIG.login.publicKey
+    );
+    
+    await emailjsBrowser.send(
+      EMAIL_CONFIG.login.serviceId,
+      EMAIL_CONFIG.login.templateAdmin,
+      {
+        ...templateParams,
+        admin_email: 'prime.elitestore02@gmail.com'
+      },
+      EMAIL_CONFIG.login.publicKey
+    );
+    console.log('[Email] Direct fast login emails dispatched successfully.');
   } catch (error) {
-    console.error('[Email] API Login dispatch failed, using direct browser fallback:', error);
-    try {
-      const templateParams = {
-        user_name: userName,
-        user_email: userEmail,
-        user_phone: userPhone,
-        login_time: new Date().toLocaleString()
-      };
-      
-      await emailjsBrowser.send(
-        EMAIL_CONFIG.login.serviceId,
-        EMAIL_CONFIG.login.templateUser,
-        templateParams,
-        EMAIL_CONFIG.login.publicKey
-      );
-      
-      await emailjsBrowser.send(
-        EMAIL_CONFIG.login.serviceId,
-        EMAIL_CONFIG.login.templateAdmin,
-        {
-          ...templateParams,
-          admin_email: 'prime.elitestore02@gmail.com'
-        },
-        EMAIL_CONFIG.login.publicKey
-      );
-    } catch (fallbackError) {
-      console.error('[Email] Direct browser login fallback failed:', fallbackError);
-    }
+    console.error('[Email] Direct browser login dispatch failed:', error);
   }
 };
 
@@ -326,26 +304,15 @@ export const sendAdminOrderEmail = async (orderData: any) => {
   };
 
   try {
-    const response = await fetch('/api/email/order', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ type: 'admin', templateParams })
-    });
-    if (!response.ok) {
-      throw new Error(`Server status ${response.status}`);
-    }
+    await emailjsBrowser.send(
+      EMAIL_CONFIG.order.serviceId,
+      EMAIL_CONFIG.order.templateAdmin,
+      templateParams,
+      EMAIL_CONFIG.order.publicKey
+    );
+    console.log('[Email] Direct fast admin order notification dispatched successfully.');
   } catch (error) {
-    console.error('[Email] Admin order dispatch via API failed, using direct browser fallback:', error);
-    try {
-      await emailjsBrowser.send(
-        EMAIL_CONFIG.order.serviceId,
-        EMAIL_CONFIG.order.templateAdmin,
-        templateParams,
-        EMAIL_CONFIG.order.publicKey
-      );
-    } catch (fallbackError) {
-      console.error('[Email] Direct browser admin order fallback failed:', fallbackError);
-    }
+    console.error('[Email] Direct browser admin order dispatch failed:', error);
   }
 };
 
@@ -390,26 +357,15 @@ export const sendCustomerConfirmationEmail = async (orderData: any) => {
   };
 
   try {
-    const response = await fetch('/api/email/order', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ type: 'customer', templateParams })
-    });
-    if (!response.ok) {
-      throw new Error(`Server status ${response.status}`);
-    }
+    await emailjsBrowser.send(
+      EMAIL_CONFIG.order.serviceId,
+      EMAIL_CONFIG.order.templateCustomer,
+      templateParams,
+      EMAIL_CONFIG.order.publicKey
+    );
+    console.log('[Email] Direct fast customer confirmation email dispatched successfully.');
   } catch (error) {
-    console.error('[Email] Customer order dispatch via API failed, using direct browser fallback:', error);
-    try {
-      await emailjsBrowser.send(
-        EMAIL_CONFIG.order.serviceId,
-        EMAIL_CONFIG.order.templateCustomer,
-        templateParams,
-        EMAIL_CONFIG.order.publicKey
-      );
-    } catch (fallbackError) {
-      console.error('[Email] Direct browser customer order fallback failed:', fallbackError);
-    }
+    console.error('[Email] Direct browser customer confirmation dispatch failed:', error);
   }
 };
 
