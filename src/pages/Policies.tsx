@@ -36,6 +36,13 @@ export const Policies = () => {
           </p>
         </section>
 
+        <section>
+          <h2 className="text-2xl font-bold text-gold-500 mb-4">Return & Refund Policy</h2>
+          <p>
+            If any ordered product is unavailable or we are otherwise unable to deliver your order, we will issue a full refund of the 50% advance reservation payment made by you. Please allow a few business days for the refund process to be completed and credited back to your original source of payment.
+          </p>
+        </section>
+
       </div>
     </div>
   );
