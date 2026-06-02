@@ -10,45 +10,15 @@ export const sendSignupEmail = async (userName: string, userEmail: string, userP
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ userName, userEmail, userPhone, signupDate })
     });
-    const contentType = res.headers.get('content-type');
-    if (res.ok && contentType && contentType.includes('application/json')) {
-      const data = await res.json();
-      if (data && data.success) {
-        console.log('[Email] Signup emails sent via backend.');
-        return;
-      }
+    
+    // We assume backend handles the request. No frontend fallback to prevent duplicate emails.
+    if (!res.ok) {
+      console.warn(`[Email] Server responded with status: ${res.status}`);
+    } else {
+      console.log('[Email] Signup emails dispatched via backend.');
     }
-    throw new Error(`Server status: ${res.status} or invalid JSON response`);
   } catch (error) {
-    console.warn('[Email] Backend signup dispatch unsuccessful, trying browser client-side fallback:', error);
-  }
-
-  // Pure static client fallback
-  try {
-    const serviceId = import.meta.env.VITE_EMAILJS_SERVICE_ID_1 || '';
-    const templateUser = import.meta.env.VITE_EMAILJS_TEMPLATE_ID_SIGNUP_USER_1 || '';
-    const templateAdmin = import.meta.env.VITE_EMAILJS_TEMPLATE_ID_SIGNUP_ADMIN_1 || '';
-    const pubKey = import.meta.env.VITE_EMAILJS_PUBLIC_KEY_1 || '';
-
-    if (!serviceId || !pubKey) {
-      console.warn('[Email] Signup email configuration missing (VITE_EMAILJS_SERVICE_ID_1 / VITE_EMAILJS_PUBLIC_KEY_1). Dynamic emails cannot be dispatched.');
-      return;
-    }
-
-    const params = {
-      user_name: userName,
-      user_email: userEmail,
-      user_phone: userPhone,
-      user_phone_number: userPhone,
-      signup_date: signupDate || new Date().toISOString(),
-      admin_email: 'prime.elitestore02@gmail.com'
-    };
-
-    await emailjsBrowser.send(serviceId, templateUser, params, pubKey);
-    await emailjsBrowser.send(serviceId, templateAdmin, params, pubKey);
-    console.log('[Email] Signup emails dispatched directly from browser.');
-  } catch (err) {
-    console.error('[Email] Direct browser signup dispatch failed:', err);
+    console.error('[Email] Backend signup dispatch failed:', error);
   }
 };
 
@@ -59,43 +29,14 @@ export const sendLoginEmail = async (userName: string, userEmail: string, userPh
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ userName, userEmail, userPhone })
     });
-    const contentType = res.headers.get('content-type');
-    if (res.ok && contentType && contentType.includes('application/json')) {
-      const data = await res.json();
-      if (data && data.success) {
-        console.log('[Email] Login emails sent via backend.');
-        return;
-      }
+    
+    if (!res.ok) {
+      console.warn(`[Email] Server responded with status: ${res.status}`);
+    } else {
+      console.log('[Email] Login emails dispatched via backend.');
     }
-    throw new Error(`Server status: ${res.status} or invalid JSON response`);
   } catch (error) {
-    console.warn('[Email] Backend login dispatch unsuccessful, trying browser client-side fallback:', error);
-  }
-
-  // Pure static client fallback
-  try {
-    const serviceId = import.meta.env.VITE_EMAILJS_SERVICE_ID_2 || '';
-    const templateUser = import.meta.env.VITE_EMAILJS_TEMPLATE_ID_LOGIN_USER_2 || '';
-    const templateAdmin = import.meta.env.VITE_EMAILJS_TEMPLATE_ID_LOGIN_ADMIN_2 || '';
-    const pubKey = import.meta.env.VITE_EMAILJS_PUBLIC_KEY_2 || '';
-
-    if (!serviceId || !pubKey) {
-      console.warn('[Email] Login email configuration missing (VITE_EMAILJS_SERVICE_ID_2 / VITE_EMAILJS_PUBLIC_KEY_2). Dynamic emails cannot be dispatched.');
-      return;
-    }
-
-    const params = {
-      user_name: userName,
-      user_email: userEmail,
-      user_phone_number: userPhone,
-      admin_email: 'prime.elitestore02@gmail.com'
-    };
-
-    await emailjsBrowser.send(serviceId, templateUser, params, pubKey);
-    await emailjsBrowser.send(serviceId, templateAdmin, params, pubKey);
-    console.log('[Email] Login emails dispatched directly from browser.');
-  } catch (err) {
-    console.error('[Email] Direct browser login dispatch failed:', err);
+    console.error('[Email] Backend login dispatch failed:', error);
   }
 };
 
@@ -184,41 +125,21 @@ Subtotal: ₹${subtotal.toLocaleString()}`;
     admin_email: 'prime.elitestore02@gmail.com'
   };
 
-  try {
-    const res = await fetch(`${BACKEND_URL}/api/email/order`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ type: 'admin', templateParams })
-    });
-    const contentType = res.headers.get('content-type');
-    if (res.ok && contentType && contentType.includes('application/json')) {
-      const data = await res.json();
-      if (data && data.success) {
-        console.log('[EmailJS] Admin notification email dispatched via backend.');
-        return;
+    try {
+      const res = await fetch(`${BACKEND_URL}/api/email/order`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ type: 'admin', templateParams })
+      });
+      
+      if (!res.ok) {
+        console.warn(`[Email] Server responded with status: ${res.status}`);
+      } else {
+        console.log('[Email] Admin notification email dispatched via backend.');
       }
+    } catch (error) {
+      console.error('[Email] Backend admin order dispatch failed:', error);
     }
-    throw new Error(`Server status: ${res.status} or invalid JSON response`);
-  } catch (error) {
-    console.warn('[Email] Backend admin order dispatch unsuccessful, trying browser client-side fallback:', error);
-  }
-
-  // Pure static client fallback
-  try {
-    const serviceId = import.meta.env.VITE_EMAILJS_SERVICE_ID_3 || '';
-    const templateId = import.meta.env.VITE_EMAILJS_TEMPLATE_ID_ORDER_ADMIN_3 || '';
-    const pubKey = import.meta.env.VITE_EMAILJS_PUBLIC_KEY_3 || '';
-
-    if (!serviceId || !pubKey) {
-      console.warn('[Email] Admin Order email configuration missing (VITE_EMAILJS_SERVICE_ID_3 / VITE_EMAILJS_PUBLIC_KEY_3). Dynamic emails cannot be dispatched.');
-      return;
-    }
-
-    await emailjsBrowser.send(serviceId, templateId, templateParams, pubKey);
-    console.log('[EmailJS] Admin notification email dispatched directly from browser.');
-  } catch (err) {
-    console.error('[EmailJS] Direct browser admin order notification failed:', err);
-  }
 };
 
 export const sendCustomerConfirmationEmail = async (orderData: any) => {
@@ -303,34 +224,14 @@ Subtotal: ₹${subtotal.toLocaleString()}`;
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ type: 'customer', templateParams })
     });
-    const contentType = res.headers.get('content-type');
-    if (res.ok && contentType && contentType.includes('application/json')) {
-      const data = await res.json();
-      if (data && data.success) {
-        console.log('[EmailJS] Customer order confirmed email dispatched via backend.');
-        return;
-      }
+    
+    if (!res.ok) {
+      console.warn(`[Email] Server responded with status: ${res.status}`);
+    } else {
+      console.log('[Email] Customer order confirmed email dispatched via backend.');
     }
-    throw new Error(`Server status: ${res.status} or invalid JSON response`);
   } catch (error) {
-    console.warn('[Email] Backend customer order dispatch unsuccessful, trying browser client-side fallback:', error);
-  }
-
-  // Pure static client fallback
-  try {
-    const serviceId = import.meta.env.VITE_EMAILJS_SERVICE_ID_3 || '';
-    const templateId = import.meta.env.VITE_EMAILJS_TEMPLATE_ID_ORDER_USER_3 || '';
-    const pubKey = import.meta.env.VITE_EMAILJS_PUBLIC_KEY_3 || '';
-
-    if (!serviceId || !pubKey) {
-      console.warn('[Email] Customer Order email configuration missing (VITE_EMAILJS_SERVICE_ID_3 / VITE_EMAILJS_PUBLIC_KEY_3). Dynamic emails cannot be dispatched.');
-      return;
-    }
-
-    await emailjsBrowser.send(serviceId, templateId, templateParams, pubKey);
-    console.log('[EmailJS] Customer order confirmed email dispatched directly from browser.');
-  } catch (err) {
-    console.error('[EmailJS] Direct browser customer order confirmation failed:', err);
+    console.error('[Email] Backend customer order dispatch failed:', error);
   }
 };
 

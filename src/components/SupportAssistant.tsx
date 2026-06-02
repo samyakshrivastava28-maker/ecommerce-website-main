@@ -8,7 +8,7 @@ interface ChatMessage {
   text: string;
 }
 
-export const SupportAssistant = () => {
+export const SupportAssistant = ({ hasCart = false }: { hasCart?: boolean }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [showPopup, setShowPopup] = useState(false);
   const [inputVal, setInputVal] = useState('');
@@ -60,7 +60,7 @@ export const SupportAssistant = () => {
   };
 
   return (
-    <div className="fixed bottom-6 right-6 z-50 flex flex-col items-end">
+    <div className={`fixed right-6 z-50 flex flex-col items-end transition-all duration-300 ease-[cubic-bezier(0.25,0.1,0.25,1)] ${hasCart ? 'bottom-40' : 'bottom-6'}`}>
       <AnimatePresence>
         {showPopup && !isOpen && (
           <motion.div

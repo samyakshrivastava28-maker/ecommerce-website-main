@@ -1,13 +1,13 @@
 import React, { useEffect, useState, Suspense } from 'react';
-import { Outlet, useSearchParams, useLocation } from 'react-router-dom';
+import { Outlet, useSearchParams, useLocation, Link, useNavigate } from 'react-router-dom';
 import { Navbar } from './components/Navbar';
 import { Footer } from './components/Footer';
 import { CinematicIntro } from './components/CinematicIntro';
-import { SocialFloats } from './components/SocialFloats';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ShieldAlert, Lock, AlertCircle, X } from 'lucide-react';
+import { ShieldAlert, Lock, AlertCircle, X, ShoppingBag } from 'lucide-react';
 import { PhoneNumberRequiredPage } from './components/PhoneNumberRequiredPage';
 import { useAuthStore } from './store/authStore';
+import { useCartStore } from './store/cartStore';
 
 const SupportAssistant = React.lazy(() =>
   import('./components/SupportAssistant').then((module) => ({ default: module.SupportAssistant }))
@@ -15,7 +15,9 @@ const SupportAssistant = React.lazy(() =>
 
 export const Layout = () => {
   const { user, isCompliant, loading } = useAuthStore();
+  const { items } = useCartStore();
   const location = useLocation();
+  const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const [showUnauthorizedAlert, setShowUnauthorizedAlert] = useState(false);
   const [isQuotaExceeded, setIsQuotaExceeded] = useState(false);
@@ -24,6 +26,12 @@ export const Layout = () => {
   const [loadAssistant, setLoadAssistant] = useState(false);
   
   const isRestrictedRoute = ['/products', '/checkout', '/cart'].some(route => location.pathname.startsWith(route));
+
+  // Do not show floating cart on the actual cart page to prevent duplication
+  const hideFloatingCart = location.pathname === '/cart' || items.length === 0;
+
+  const totalCartItems = items.reduce((acc, item) => acc + item.quantity, 0);
+  const totalCartValue = items.reduce((acc, item) => acc + (item.price * item.quantity), 0);
 
   useEffect(() => {
     // Gracefully defer AI assistant chunk load logic to prevent network/CPU thrashing on initial load
@@ -138,10 +146,43 @@ export const Layout = () => {
       <Footer />
       {loadAssistant && (
         <Suspense fallback={null}>
-          <SupportAssistant />
+          <SupportAssistant hasCart={!hideFloatingCart} />
         </Suspense>
       )}
-      <SocialFloats />
+
+      {/* Floating Cart Panel */}
+      <AnimatePresence>
+        {!hideFloatingCart && (
+          <motion.div
+            initial={{ opacity: 0, y: 50, scale: 0.95 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 50, scale: 0.95 }}
+            className="fixed bottom-6 right-6 z-40 bg-zinc-950 border border-gold-500/30 rounded-xl p-4 shadow-[0_4px_30px_rgba(212,175,55,0.15)] flex flex-col gap-3 min-w-[240px] md:min-w-[280px]"
+          >
+            <div className="flex items-center justify-between text-white">
+              <div className="flex items-center gap-2 text-gold-500">
+                <ShoppingBag size={20} />
+                <span className="font-bold text-sm tracking-widest uppercase">Your Cart</span>
+              </div>
+              <div className="bg-white/10 px-2 py-0.5 rounded text-xs font-mono">
+                {totalCartItems} {totalCartItems === 1 ? 'item' : 'items'}
+              </div>
+            </div>
+            
+            <div className="flex items-center justify-between text-sm">
+              <span className="text-gray-400">Total Value:</span>
+              <span className="text-white font-mono font-medium">₹{totalCartValue.toLocaleString()}</span>
+            </div>
+
+            <button
+              onClick={() => navigate('/cart')}
+              className="w-full gold-gradient-bg text-black font-bold uppercase tracking-widest text-xs py-3 rounded-lg hover:shadow-lg transition-all active:scale-95 text-center mt-1"
+            >
+              View Cart
+            </button>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Premium Security Intercept Modal */}
       <AnimatePresence>
