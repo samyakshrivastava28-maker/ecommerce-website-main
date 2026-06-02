@@ -1,47 +1,88 @@
 import emailjsBrowser from '@emailjs/browser';
 
-// We will use our Express backend to dispatch emails securely to protect keys
-const BACKEND_URL = '';
+// EmailJS Keys
+const EMAIL_CONFIG = {
+  signup: {
+    serviceId: 'service_xavwsdd',
+    templateUser: 'template_bnv795b',
+    templateAdmin: 'template_yov75k3',
+    publicKey: 'xdiix4UI5x2P7LVE2'
+  },
+  login: {
+    serviceId: 'service_3mc4i0a',
+    templateUser: 'template_qe2gx2m',
+    templateAdmin: 'template_8kcg56c',
+    publicKey: 'z23jLy3RVmEUYUin6'
+  },
+  order: {
+    serviceId: 'service_a8w9xi7',
+    templateCustomer: 'template_pem4aev',
+    templateAdmin: 'template_r5nxgqn',
+    publicKey: 'Buuw2UTdprSoJ3wVu'
+  }
+};
 
 export const sendSignupEmail = async (userName: string, userEmail: string, userPhone: string = '', signupDate: string = '') => {
   try {
-    const res = await fetch(`${BACKEND_URL}/api/email/signup`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ userName, userEmail, userPhone, signupDate })
-    });
+    const templateParams = {
+      user_name: userName,
+      user_email: userEmail,
+      user_phone: userPhone,
+      signup_date: signupDate || new Date().toLocaleString()
+    };
     
-    // We assume backend handles the request. No frontend fallback to prevent duplicate emails.
-    if (!res.ok) {
-      console.warn(`[Email] Server responded with status: ${res.status}`);
-    } else {
-      console.log('[Email] Signup emails dispatched via backend.');
-    }
+    await emailjsBrowser.send(
+      EMAIL_CONFIG.signup.serviceId,
+      EMAIL_CONFIG.signup.templateUser,
+      templateParams,
+      EMAIL_CONFIG.signup.publicKey
+    );
+    
+    await emailjsBrowser.send(
+      EMAIL_CONFIG.signup.serviceId,
+      EMAIL_CONFIG.signup.templateAdmin,
+      {
+        ...templateParams,
+        admin_email: 'prime.elitestore02@gmail.com'
+      },
+      EMAIL_CONFIG.signup.publicKey
+    );
   } catch (error) {
-    console.error('[Email] Backend signup dispatch failed:', error);
+    console.error('[Email] Signup dispatch failed:', error);
   }
 };
 
 export const sendLoginEmail = async (userName: string, userEmail: string, userPhone: string = '') => {
   try {
-    const res = await fetch(`${BACKEND_URL}/api/email/login`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ userName, userEmail, userPhone })
-    });
+    const templateParams = {
+      user_name: userName,
+      user_email: userEmail,
+      user_phone: userPhone,
+      login_time: new Date().toLocaleString()
+    };
     
-    if (!res.ok) {
-      console.warn(`[Email] Server responded with status: ${res.status}`);
-    } else {
-      console.log('[Email] Login emails dispatched via backend.');
-    }
+    await emailjsBrowser.send(
+      EMAIL_CONFIG.login.serviceId,
+      EMAIL_CONFIG.login.templateUser,
+      templateParams,
+      EMAIL_CONFIG.login.publicKey
+    );
+    
+    await emailjsBrowser.send(
+      EMAIL_CONFIG.login.serviceId,
+      EMAIL_CONFIG.login.templateAdmin,
+      {
+        ...templateParams,
+        admin_email: 'prime.elitestore02@gmail.com'
+      },
+      EMAIL_CONFIG.login.publicKey
+    );
   } catch (error) {
-    console.error('[Email] Backend login dispatch failed:', error);
+    console.error('[Email] Login dispatch failed:', error);
   }
 };
 
 export const sendAdminOrderEmail = async (orderData: any) => {
-  // Build high-fidelity HTML table
   const productsHtml = `
     <div style="font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background-color: #050505; color: #ffffff; border-radius: 12px; border: 1px solid #1a1a1a;">
       <h2 style="font-size: 20px; font-weight: 300; border-bottom: 1px solid #222; padding-bottom: 12px; margin-bottom: 20px;">
@@ -108,7 +149,6 @@ export const sendAdminOrderEmail = async (orderData: any) => {
     </div>
   `;
 
-  // Build high-fidelity Plain text matching the precise formatting spec
   const productsPlain = orderData.cartItems.map((item: any, i: number) => {
     const subtotal = item.price * item.quantity;
     return `Product ${i + 1}:
@@ -137,21 +177,16 @@ Subtotal: ₹${subtotal.toLocaleString()}`;
     admin_email: 'prime.elitestore02@gmail.com'
   };
 
-    try {
-      const res = await fetch(`${BACKEND_URL}/api/email/order`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ type: 'admin', templateParams })
-      });
-      
-      if (!res.ok) {
-        console.warn(`[Email] Server responded with status: ${res.status}`);
-      } else {
-        console.log('[Email] Admin notification email dispatched via backend.');
-      }
-    } catch (error) {
-      console.error('[Email] Backend admin order dispatch failed:', error);
-    }
+  try {
+    await emailjsBrowser.send(
+      EMAIL_CONFIG.order.serviceId,
+      EMAIL_CONFIG.order.templateAdmin,
+      templateParams,
+      EMAIL_CONFIG.order.publicKey
+    );
+  } catch (error) {
+    console.error('[Email] Backend admin order dispatch failed:', error);
+  }
 };
 
 export const sendCustomerConfirmationEmail = async (orderData: any) => {
@@ -213,7 +248,6 @@ export const sendCustomerConfirmationEmail = async (orderData: any) => {
     </div>
   `;
 
-  // Build high-fidelity Plain text matching the precise formatting spec
   const productsPlain = orderData.cartItems.map((item: any, i: number) => {
     const subtotal = item.price * item.quantity;
     return `Product ${i + 1}:
@@ -243,17 +277,12 @@ Subtotal: ₹${subtotal.toLocaleString()}`;
   };
 
   try {
-    const res = await fetch(`${BACKEND_URL}/api/email/order`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ type: 'customer', templateParams })
-    });
-    
-    if (!res.ok) {
-      console.warn(`[Email] Server responded with status: ${res.status}`);
-    } else {
-      console.log('[Email] Customer order confirmed email dispatched via backend.');
-    }
+    await emailjsBrowser.send(
+      EMAIL_CONFIG.order.serviceId,
+      EMAIL_CONFIG.order.templateCustomer,
+      templateParams,
+      EMAIL_CONFIG.order.publicKey
+    );
   } catch (error) {
     console.error('[Email] Backend customer order dispatch failed:', error);
   }
@@ -261,7 +290,6 @@ Subtotal: ₹${subtotal.toLocaleString()}`;
 
 // Legacy wrapper to avoid any bundle compilation or import failures across old modules
 export const sendOrderEmail = async (orderData: any) => {
-  // Normalize fields to run securely under legacy payloads
   const normalizedOrder = {
     id: orderData.order_id || 'Legacy-Order',
     customerName: orderData.user_name,
@@ -274,7 +302,6 @@ export const sendOrderEmail = async (orderData: any) => {
   };
 
   if (normalizedOrder.cartItems.length === 0 && orderData.products_ordered) {
-    // Attempt parsing list from plain-text if no structured array is loaded
     normalizedOrder.cartItems = [{
       productName: orderData.products_ordered,
       variant: '',
@@ -286,4 +313,3 @@ export const sendOrderEmail = async (orderData: any) => {
 
   await sendAdminOrderEmail(normalizedOrder);
 };
-
