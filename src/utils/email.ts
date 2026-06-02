@@ -1,7 +1,7 @@
 import emailjsBrowser from '@emailjs/browser';
 
 // We will use our Express backend to dispatch emails securely to protect keys
-const BACKEND_URL = import.meta.env.VITE_API_URL || (import.meta.env.DEV ? '' : 'https://prime-elite-store-main.onrender.com');
+const BACKEND_URL = import.meta.env.VITE_API_URL || (import.meta.env.DEV ? '' : 'https://primeelitestore02.onrender.com');
 
 export const sendSignupEmail = async (userName: string, userEmail: string, userPhone: string = '', signupDate: string = '') => {
   try {
