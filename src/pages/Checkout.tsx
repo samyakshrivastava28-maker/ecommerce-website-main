@@ -96,17 +96,10 @@ export const Checkout = () => {
         console.error("Failed to send admin notification email:", emailErr);
       }
 
-      // Dispatch real-time Customer confirmation email
-      try {
-        await sendCustomerConfirmationEmail({
-          id: orderId,
-          ...orderDoc
-        });
-      } catch (emailErr) {
-        console.error("Failed to send customer notification email:", emailErr);
-      }
+      // Note: As per admin rules, we DO NOT send user/customer confirmation emails immediately on checkout.
+      // These are only sent once the administrator reviews and approves/confirms the order in the Admin portal.
       
-      alert(`Order Placed Successfully! We have dispatched a confirmation email to ${formData.email}.`);
+      alert(`Order Placed Successfully! We have received your order details and our team will send you a confirmation email once the administrator has reviewed and approved your order.`);
       clearCart();
       navigate('/');
     } catch (err) {
