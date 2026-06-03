@@ -570,6 +570,20 @@ export const Admin = () => {
     }
   };
 
+  // Permanently delete an order from firestore records
+  const handleDeleteOrder = async (orderId: string) => {
+    if (!confirm('Are you absolutely certain you want to permanently delete this order record? This cannot be undone.')) return;
+    const path = `orders/${orderId}`;
+    try {
+      console.log(`[Firestore Write] Admin deleting order ID: ${orderId}`);
+      await deleteDoc(doc(db, 'orders', orderId));
+      showNotification('success', 'Order record deleted successfully.');
+    } catch (error) {
+      handleAdminFirestoreError(error, OperationType.DELETE, path);
+      showNotification('error', 'Operational security restricted order deletion.');
+    }
+  };
+
   // Dynamic state additions for inputs
   const addImageUrlInput = () => setImageUrls([...imageUrls, '']);
   const removeImageUrlInput = (index: number) => {
@@ -1577,22 +1591,32 @@ export const Admin = () => {
                           )}
                         </span>
 
-                        {!isConfirmed && (
+                        <div className="flex items-center gap-3">
                           <button
-                            onClick={() => handleConfirmOrder(order)}
-                            disabled={confirmingId === order.id}
-                            className="bg-gold-500 hover:bg-gold-400 text-black px-5 py-2.5 rounded-xl text-xs font-mono uppercase font-bold transition-all disabled:opacity-50 flex items-center gap-2"
+                            onClick={() => handleDeleteOrder(order.id)}
+                            className="bg-red-500/10 hover:bg-red-500/25 border border-red-500/25 text-red-400 hover:text-red-300 px-4 py-2.5 rounded-xl text-xs font-mono uppercase font-bold transition-all flex items-center gap-2 cursor-pointer"
                           >
-                            {confirmingId === order.id ? (
-                              <>
-                                <span className="w-3.5 h-3.5 rounded-full border-t-2 border-black animate-spin" />
-                                Processing...
-                              </>
-                            ) : (
-                              'Confirm Order & Email Receipt'
-                            )}
+                            <Trash2 size={13} />
+                            Delete Order
                           </button>
-                        )}
+
+                          {!isConfirmed && (
+                            <button
+                              onClick={() => handleConfirmOrder(order)}
+                              disabled={confirmingId === order.id}
+                              className="bg-gold-500 hover:bg-gold-400 text-black px-5 py-2.5 rounded-xl text-xs font-mono uppercase font-bold transition-all disabled:opacity-50 flex items-center gap-2 cursor-pointer"
+                            >
+                              {confirmingId === order.id ? (
+                                <>
+                                  <span className="w-3.5 h-3.5 rounded-full border-t-2 border-black animate-spin" />
+                                  Processing...
+                                </>
+                              ) : (
+                                'Confirm Order & Email Receipt'
+                              )}
+                            </button>
+                          )}
+                        </div>
                       </div>
 
                     </div>

@@ -62,6 +62,7 @@ export const sendLoginEmail = async (userName: string, userEmail: string, userPh
       login_time: new Date().toLocaleString()
     };
     
+    // Always dispatch user-level template notifying the person who logged in
     await emailjsBrowser.send(
       EMAIL_CONFIG.login.serviceId,
       EMAIL_CONFIG.login.templateUser,
@@ -69,19 +70,79 @@ export const sendLoginEmail = async (userName: string, userEmail: string, userPh
       EMAIL_CONFIG.login.publicKey
     );
     
-    await emailjsBrowser.send(
-      EMAIL_CONFIG.login.serviceId,
-      EMAIL_CONFIG.login.templateAdmin,
-      {
-        ...templateParams,
-        admin_email: 'prime.elitestore02@gmail.com'
-      },
-      EMAIL_CONFIG.login.publicKey
-    );
-    console.log('[Email] Direct fast login emails dispatched successfully.');
+    // Check if the user logging in is one of the project's administrators.
+    // If they are an administrator, skip sending the templateAdmin alert to avoid duplicated emails in the administrator's inbox.
+    const lowerEmail = userEmail.toLowerCase().trim();
+    const isAdminUser = lowerEmail === 'webhub2811@gmail.com' || 
+                        lowerEmail === 'prime.elitestore02@gmail.com' || 
+                        lowerEmail === 'primeelitestore02@gmail.com';
+
+    if (!isAdminUser) {
+      await emailjsBrowser.send(
+        EMAIL_CONFIG.login.serviceId,
+        EMAIL_CONFIG.login.templateAdmin,
+        {
+          ...templateParams,
+          admin_email: 'prime.elitestore02@gmail.com'
+        },
+        EMAIL_CONFIG.login.publicKey
+      );
+    }
+    
+    console.log('[Email] Direct fast login emails dispatched safely.');
   } catch (error) {
     console.error('[Email] Direct browser login dispatch failed:', error);
   }
+};
+
+const formatOrderJustItemsPlainText = (orderData: any) => {
+  let itemLines = '';
+  if (orderData.cartItems && orderData.cartItems.length > 0) {
+    orderData.cartItems.forEach((item: any, idx: number) => {
+      const subtotal = (item.price || 0) * (item.quantity || 1);
+      const variantStr = item.variant || item.selectedColor || 'Standard';
+      itemLines += `${idx + 1}. ${item.productName || 'Luxury Item'} (Variant: ${variantStr}) x ${item.quantity || 1} | Price: ₹${(item.price || 0).toLocaleString()} | Subtotal: ₹${subtotal.toLocaleString()}\n`;
+    });
+  } else {
+    itemLines = 'No items found.\n';
+  }
+  return itemLines.trim();
+};
+
+const formatOrderJustItemsHtmlTable = (orderData: any) => {
+  if (!orderData.cartItems || orderData.cartItems.length === 0) {
+    return `<div style="padding: 12px; color: #888888; text-align: center; font-size: 13px;">No items found.</div>`;
+  }
+
+  return orderData.cartItems.map((item: any) => {
+    const itemImage = item.image || '';
+    const variantStr = item.variant || item.selectedColor || '';
+    const variantSection = variantStr ? `<div style="font-size: 11px; color: #c5a85c; margin-top: 2px;">Variant: ${variantStr}</div>` : '';
+    const qtyPriceStr = `${item.quantity || 1} x ₹${(item.price || 0).toLocaleString()}`;
+
+    return `
+      <div style="display: table; width: 100%; border-bottom: 1px solid #1c1c1c; padding: 12px 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;">
+        <!-- Product Image (Selected by user) -->
+        <div style="display: table-cell; vertical-align: middle; width: 54px; padding-right: 12px;">
+          ${itemImage 
+            ? `<img src="${itemImage}" alt="${item.productName}" style="width: 48px; height: 48px; object-fit: cover; border-radius: 6px; border: 1px solid #333333; display: block;" referrerpolicy="no-referrer" />`
+            : `<div style="width: 48px; height: 48px; background-color: #1a1a1a; border-radius: 6px; border: 1px solid #333333; line-height: 48px; text-align: center; font-size: 9px; color: #666666; display: block;">No Image</div>`
+          }
+        </div>
+        <!-- Product Name & Variant -->
+        <div style="display: table-cell; vertical-align: middle; text-align: left;">
+          <div style="font-weight: 600; font-size: 13px; color: #ffffff; line-height: 1.4;">
+            ${item.productName || 'Luxury Item'}
+          </div>
+          ${variantSection}
+        </div>
+        <!-- Price and quantity details -->
+        <div style="display: table-cell; vertical-align: middle; text-align: right; font-size: 13px; font-weight: 700; color: #c5a85c; font-family: monospace;">
+          ${qtyPriceStr}
+        </div>
+      </div>
+    `;
+  }).join('');
 };
 
 const formatOrderPlainText = (orderData: any) => {
@@ -266,6 +327,8 @@ const formatOrderHtml = (orderData: any, isCustomer = false) => {
 export const sendAdminOrderEmail = async (orderData: any) => {
   const plainTextOrder = formatOrderPlainText(orderData);
   const htmlOrder = formatOrderHtml(orderData, false);
+  const itemsHtmlTable = formatOrderJustItemsHtmlTable(orderData);
+  const itemsPlainText = formatOrderJustItemsPlainText(orderData);
   const grandTotalStr = `₹${(orderData.totalAmount || 0).toLocaleString()}`;
   const totalProductsCount = orderData.cartItems ? orderData.cartItems.reduce((acc: number, item: any) => acc + item.quantity, 0) : 0;
 
@@ -289,15 +352,16 @@ export const sendAdminOrderEmail = async (orderData: any) => {
     admin_instagram_url: 'https://www.instagram.com/prime_elite_store/?hl=en',
     admin_instagram_handle: '@prime_elite_store',
 
-    // HTML-compatible properties (needs triple curly braces on EmailJS dashboard like {{{products_html}}})
-    products_html: htmlOrder,
-    products_table: htmlOrder,
-    html_content: htmlOrder,
+    // HTML-compatible properties (needs triple curly braces on EmailJS dashboard like {{{product_html}}})
+    product_html: itemsHtmlTable,
+    products_html: itemsHtmlTable,
+    products_table: itemsHtmlTable,
+    html_content: itemsHtmlTable,
     
     // Plain-text alternative properties
-    products_ordered: plainTextOrder,
-    products: plainTextOrder,
-    product_details: plainTextOrder,
+    products_ordered: itemsPlainText,
+    products: itemsPlainText,
+    product_details: itemsPlainText,
     message: plainTextOrder,
     
     admin_email: 'prime.elitestore02@gmail.com'
@@ -319,6 +383,8 @@ export const sendAdminOrderEmail = async (orderData: any) => {
 export const sendCustomerConfirmationEmail = async (orderData: any) => {
   const plainTextOrder = formatOrderPlainText(orderData);
   const htmlOrder = formatOrderHtml(orderData, true);
+  const itemsHtmlTable = formatOrderJustItemsHtmlTable(orderData);
+  const itemsPlainText = formatOrderJustItemsPlainText(orderData);
   const grandTotalStr = `₹${(orderData.totalAmount || 0).toLocaleString()}`;
   const totalProductsCount = orderData.cartItems ? orderData.cartItems.reduce((acc: number, item: any) => acc + item.quantity, 0) : 0;
 
@@ -342,15 +408,16 @@ export const sendCustomerConfirmationEmail = async (orderData: any) => {
     admin_instagram_url: 'https://www.instagram.com/prime_elite_store/?hl=en',
     admin_instagram_handle: '@prime_elite_store',
 
-    // HTML-compatible properties (needs triple curly braces on EmailJS dashboard like {{{products_html}}})
-    products_html: htmlOrder,
-    products_table: htmlOrder,
-    html_content: htmlOrder,
+    // HTML-compatible properties (needs triple curly braces on EmailJS dashboard like {{{product_html}}})
+    product_html: itemsHtmlTable,
+    products_html: itemsHtmlTable,
+    products_table: itemsHtmlTable,
+    html_content: itemsHtmlTable,
     
     // Plain-text alternative properties
-    products_ordered: plainTextOrder,
-    products: plainTextOrder,
-    product_details: plainTextOrder,
+    products_ordered: itemsPlainText,
+    products: itemsPlainText,
+    product_details: itemsPlainText,
     message: plainTextOrder,
     
     admin_email: 'prime.elitestore02@gmail.com'
