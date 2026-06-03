@@ -22,7 +22,19 @@ const EMAIL_CONFIG = {
   }
 };
 
+// State to prevent duplicate emails from being sent across hot-reloads or double-clicks
+const recentlySentEmails = new Set<string>();
+
 export const sendSignupEmail = async (userName: string, userEmail: string, userPhone: string = '', signupDate: string = '') => {
+  const duplicateKey = `signup-${userEmail}`;
+  if (recentlySentEmails.has(duplicateKey)) {
+    console.log('[Email] Prevented duplicate signup email to', userEmail);
+    return;
+  }
+  recentlySentEmails.add(duplicateKey);
+  // Clear the lock after 60 seconds
+  setTimeout(() => recentlySentEmails.delete(duplicateKey), 60000);
+
   try {
     const templateParams = {
       user_name: userName,
@@ -31,6 +43,7 @@ export const sendSignupEmail = async (userName: string, userEmail: string, userP
       signup_date: signupDate || new Date().toLocaleString()
     };
     
+    // Welcome email (to user)
     await emailjsBrowser.send(
       EMAIL_CONFIG.signup.serviceId,
       EMAIL_CONFIG.signup.templateUser,
@@ -38,6 +51,7 @@ export const sendSignupEmail = async (userName: string, userEmail: string, userP
       EMAIL_CONFIG.signup.publicKey
     );
     
+    // New User email (to admin)
     await emailjsBrowser.send(
       EMAIL_CONFIG.signup.serviceId,
       EMAIL_CONFIG.signup.templateAdmin,
@@ -54,6 +68,15 @@ export const sendSignupEmail = async (userName: string, userEmail: string, userP
 };
 
 export const sendLoginEmail = async (userName: string, userEmail: string, userPhone: string = '') => {
+  const duplicateKey = `login-${userEmail}`;
+  if (recentlySentEmails.has(duplicateKey)) {
+    console.log('[Email] Prevented duplicate login email to', userEmail);
+    return;
+  }
+  recentlySentEmails.add(duplicateKey);
+  // Clear the lock after 60 seconds
+  setTimeout(() => recentlySentEmails.delete(duplicateKey), 60000);
+
   try {
     const templateParams = {
       user_name: userName,
@@ -62,7 +85,7 @@ export const sendLoginEmail = async (userName: string, userEmail: string, userPh
       login_time: new Date().toLocaleString()
     };
     
-    // Always dispatch user-level template notifying the person who logged in
+    // Welcome Back email (to user)
     await emailjsBrowser.send(
       EMAIL_CONFIG.login.serviceId,
       EMAIL_CONFIG.login.templateUser,
@@ -70,8 +93,7 @@ export const sendLoginEmail = async (userName: string, userEmail: string, userPh
       EMAIL_CONFIG.login.publicKey
     );
     
-    // Check if the user logging in is one of the project's administrators.
-    // If they are an administrator, skip sending the templateAdmin alert to avoid duplicated emails in the administrator's inbox.
+    // Old User Back email (to admin)
     const lowerEmail = userEmail.toLowerCase().trim();
     const isAdminUser = lowerEmail === 'webhub2811@gmail.com' || 
                         lowerEmail === 'prime.elitestore02@gmail.com' || 
