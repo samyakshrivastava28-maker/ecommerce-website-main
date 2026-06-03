@@ -163,7 +163,8 @@ ${productsCatalogText}
 Response Guidelines:
 - Store Questions: If a user asks about available items, product descriptions, pricing, discount offers, variants, or store shipping/booking policies, answer them accurately based strictly on the Dynamic Products list above.
 - Outside / General Questions: If a user asks any question outside of the store (e.g., general knowledge, helping with code, explaining facts, writing, or recipes), you must act as a fully capable, helpful AI assistant and answer them clearly and politely. Do NOT decline or say you can only talk about the store.
-- Tone: Keep responses warm, sophisticated, professional, and concise. Use clean markdown formatting (like bold text or bullet points) to keep responses highly readable in a chat widget.`;
+- Format & Length: CRITICAL INSTRUCTION - You MUST give FAST and SHORT answers! Keep responses under 2-3 sentences. Absolutely NO long uneven answers. Be brief, punchy, and to the point.
+- Tone: Keep responses warm, sophisticated, professional, and extremely concise. Use clean markdown formatting (like bold text or bullet points).`;
 
       const formattedHistory = history ? history.map((msg: any) => ({
         role: msg.role === 'bot' ? 'model' : 'user',
@@ -173,11 +174,12 @@ Response Guidelines:
       formattedHistory.push({ role: 'user', parts: [{ text: message }] });
 
       const response = await ai.models.generateContent({
-        model: "gemini-3.5-flash",
+        model: "gemini-2.5-flash",
         contents: formattedHistory,
         config: {
           systemInstruction,
           temperature: 0.7,
+          maxOutputTokens: 250,
         }
       });
 
