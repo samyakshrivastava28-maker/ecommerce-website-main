@@ -22,18 +22,29 @@ const EMAIL_CONFIG = {
   }
 };
 
-// State to prevent duplicate emails from being sent across hot-reloads or double-clicks
-const recentlySentEmails = new Set<string>();
+// Helper to prevent duplicate emails across re-renders and reloads using sessionStorage
+const isEmailRecentlySent = (key: string): boolean => {
+  try {
+    const timestampStr = sessionStorage.getItem(key);
+    if (timestampStr) {
+      const timestamp = parseInt(timestampStr, 10);
+      if (Date.now() - timestamp < 30000) { // 30 seconds debounce
+        return true;
+      }
+    }
+    sessionStorage.setItem(key, Date.now().toString());
+    return false;
+  } catch (e) {
+    return false; // Fallback if no sessionStorage
+  }
+};
 
 export const sendSignupEmail = async (userName: string, userEmail: string, userPhone: string = '', signupDate: string = '') => {
-  const duplicateKey = `signup-${userEmail}`;
-  if (recentlySentEmails.has(duplicateKey)) {
+  const duplicateKey = `email_lock_signup_${userEmail}`;
+  if (isEmailRecentlySent(duplicateKey)) {
     console.log('[Email] Prevented duplicate signup email to', userEmail);
     return;
   }
-  recentlySentEmails.add(duplicateKey);
-  // Clear the lock after 60 seconds
-  setTimeout(() => recentlySentEmails.delete(duplicateKey), 60000);
 
   try {
     const templateParams = {
@@ -51,16 +62,23 @@ export const sendSignupEmail = async (userName: string, userEmail: string, userP
       EMAIL_CONFIG.signup.publicKey
     );
     
-    // New User email (to admin)
-    await emailjsBrowser.send(
-      EMAIL_CONFIG.signup.serviceId,
-      EMAIL_CONFIG.signup.templateAdmin,
-      {
-        ...templateParams,
-        admin_email: 'prime.elitestore02@gmail.com'
-      },
-      EMAIL_CONFIG.signup.publicKey
-    );
+    // New User email (to admin) - Skip if an Admin is testing signup with their own email
+    const lowerEmail = userEmail.toLowerCase().trim();
+    const isAdminUser = lowerEmail === 'webhub2811@gmail.com' || 
+                        lowerEmail === 'prime.elitestore02@gmail.com' || 
+                        lowerEmail === 'primeelitestore02@gmail.com';
+
+    if (!isAdminUser) {
+      await emailjsBrowser.send(
+        EMAIL_CONFIG.signup.serviceId,
+        EMAIL_CONFIG.signup.templateAdmin,
+        {
+          ...templateParams,
+          admin_email: 'prime.elitestore02@gmail.com'
+        },
+        EMAIL_CONFIG.signup.publicKey
+      );
+    }
     console.log('[Email] Direct fast signup emails dispatched successfully.');
   } catch (error) {
     console.error('[Email] Direct browser signup dispatch failed:', error);
@@ -68,14 +86,11 @@ export const sendSignupEmail = async (userName: string, userEmail: string, userP
 };
 
 export const sendLoginEmail = async (userName: string, userEmail: string, userPhone: string = '') => {
-  const duplicateKey = `login-${userEmail}`;
-  if (recentlySentEmails.has(duplicateKey)) {
+  const duplicateKey = `email_lock_login_${userEmail}`;
+  if (isEmailRecentlySent(duplicateKey)) {
     console.log('[Email] Prevented duplicate login email to', userEmail);
     return;
   }
-  recentlySentEmails.add(duplicateKey);
-  // Clear the lock after 60 seconds
-  setTimeout(() => recentlySentEmails.delete(duplicateKey), 60000);
 
   try {
     const templateParams = {
