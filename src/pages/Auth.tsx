@@ -142,7 +142,12 @@ export const Auth = () => {
           } catch (fErr) {
             handleFirestoreError(fErr, OperationType.WRITE, `users/${cred.user.uid}`);
           }
-          navigate('/');
+          const redirect = searchParams.get('redirect');
+          if (redirect) {
+            navigate(redirect.startsWith('/') ? redirect : `/${redirect}`);
+          } else {
+            navigate('/');
+          }
         }
       }
     } catch (err: any) {
@@ -247,7 +252,12 @@ export const Auth = () => {
             handleFirestoreError(fErr, OperationType.CREATE, `users/${cred.user.uid}`);
           }
         }
-        navigate('/');
+        const redirect = searchParams.get('redirect');
+        if (redirect) {
+          navigate(redirect.startsWith('/') ? redirect : `/${redirect}`);
+        } else {
+          navigate('/');
+        }
       }
     } catch (err: any) {
       console.error("Google Auth error:", err);

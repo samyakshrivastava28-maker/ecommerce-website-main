@@ -35,14 +35,6 @@ export const Products = () => {
     return () => clearTimeout(handler);
   }, [searchQuery]);
 
-  // Authentication guard
-  useEffect(() => {
-    if (!authLoading && !user) {
-      alert("You can't see our collection without signup. Please create an account to view our premium items.");
-      navigate('/login?redirect=products&mode=signup');
-    }
-  }, [user, authLoading, navigate]);
-
   // Helper for skeletons
   const SkeletonCard = () => (
     <div className="flex flex-col bg-zinc-950 border border-white/5 rounded-xl pb-3 md:pb-5 overflow-hidden w-full h-full min-w-0 md:min-w-[280px]">
@@ -101,7 +93,7 @@ export const Products = () => {
 
   // 4. Memoize categorized sections to prevent constant re-filtering on state changes
   const sections = React.useMemo(() => [
-    { title: 'Special Products', id: 'Special', data: products.filter(p => (p.featured || p.trending) && !(/watch/i.test(p.category) && !/smart/i.test(p.category) && !/smart/i.test(p.productName))) },
+    { title: 'Smart Devices', id: 'Smart Devices', data: products.filter(p => (/smart/i.test(p.category) && !/smartwatch/i.test(p.category))) },
     { title: 'Luxury Watches', id: 'Watches', data: products.filter(p => (/watch/i.test(p.category) && !/smart/i.test(p.category) && !/smart/i.test(p.productName))) },
     { title: 'Smartwatches', id: 'Smartwatches', data: products.filter(p => (/smartwatch/i.test(p.category) || /smart watch/i.test(p.category) || /smart watch/i.test(p.productName))) },
     { title: 'EarPods', id: 'EarPods', data: products.filter(p => (/earpod/i.test(p.category) || /earbud/i.test(p.category) || /earpod/i.test(p.productName) || /earbud/i.test(p.productName))) },
@@ -110,7 +102,7 @@ export const Products = () => {
 
   // 5. Dynamically compute unique categories from database products for zero-code UI scaling!
   const categories = React.useMemo(() => {
-    const set = new Set<string>(['All', 'Special', 'Watches', 'Smartwatches', 'EarPods', 'Headphones']);
+    const set = new Set<string>(['All', 'Smart Devices', 'Watches', 'Smartwatches', 'EarPods', 'Headphones']);
     products.forEach(p => {
       if (p.category) {
         const normalized = p.category.trim();

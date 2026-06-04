@@ -41,14 +41,6 @@ export const ProductDetails = () => {
     return () => unsubscribe();
   }, [initializeProductsListener]);
 
-  // Authentication guard
-  useEffect(() => {
-    if (!authLoading && !user) {
-      alert("You can't see our collection without signup. Please create an account to view our premium items.");
-      navigate(`/login?redirect=products/${id}&mode=signup`);
-    }
-  }, [user, authLoading, navigate, id]);
-
   useEffect(() => {
     const fetchProduct = async () => {
       if (!id) return;
