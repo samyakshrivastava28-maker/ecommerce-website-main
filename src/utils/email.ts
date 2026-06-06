@@ -23,12 +23,19 @@ const EMAIL_CONFIG = {
 };
 
 // Helper to prevent duplicate emails across re-renders and reloads using sessionStorage
+// Module-level in-memory lock to guarantee absolute debounce even during rapid parallel executions
+const inMemoryEmailLocks = new Set<string>();
+
 const isEmailRecentlySent = (key: string): boolean => {
+  if (inMemoryEmailLocks.has(key)) return true;
+  inMemoryEmailLocks.add(key);
+  setTimeout(() => inMemoryEmailLocks.delete(key), 60000); // 60s memory lock
+
   try {
     const timestampStr = sessionStorage.getItem(key);
     if (timestampStr) {
       const timestamp = parseInt(timestampStr, 10);
-      if (Date.now() - timestamp < 30000) { // 30 seconds debounce
+      if (Date.now() - timestamp < 60000) { // 60 seconds debounce for session
         return true;
       }
     }
@@ -362,6 +369,11 @@ const formatOrderHtml = (orderData: any, isCustomer = false) => {
 };
 
 export const sendAdminOrderEmail = async (orderData: any) => {
+  const duplicateKey = `email_lock_order_admin_${orderData.orderId || orderData.id || Date.now()}`;
+  if (isEmailRecentlySent(duplicateKey)) {
+    console.log('[Email] Prevented duplicate admin order email');
+    return;
+  }
   const plainTextOrder = formatOrderPlainText(orderData);
   const htmlOrder = formatOrderHtml(orderData, false);
   const itemsHtmlTable = formatOrderJustItemsHtmlTable(orderData);
@@ -418,6 +430,11 @@ export const sendAdminOrderEmail = async (orderData: any) => {
 };
 
 export const sendCustomerConfirmationEmail = async (orderData: any) => {
+  const duplicateKey = `email_lock_order_customer_${orderData.orderId || orderData.id || Date.now()}`;
+  if (isEmailRecentlySent(duplicateKey)) {
+    console.log('[Email] Prevented duplicate customer confirmation email');
+    return;
+  }
   const plainTextOrder = formatOrderPlainText(orderData);
   const htmlOrder = formatOrderHtml(orderData, true);
   const itemsHtmlTable = formatOrderJustItemsHtmlTable(orderData);
