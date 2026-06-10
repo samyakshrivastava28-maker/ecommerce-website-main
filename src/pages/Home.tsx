@@ -9,7 +9,6 @@ import { SEO } from '../components/SEO';
 export const Home = () => {
   return (
     <div className="w-full">
-      <SEO />
       {/* Cinematic Hero */}
       <section className="relative h-screen min-h-[600px] flex items-center justify-center overflow-hidden">
         <div className="absolute inset-0 flex items-center justify-center z-0 p-4 md:p-0">

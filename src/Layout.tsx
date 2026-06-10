@@ -1,4 +1,4 @@
-import React, { useEffect, useState, Suspense } from 'react';
+import React, { useEffect, useState, Suspense, useMemo } from 'react';
 import { Outlet, useSearchParams, useLocation, Link, useNavigate } from 'react-router-dom';
 import { Navbar } from './components/Navbar';
 import { Footer } from './components/Footer';
@@ -8,9 +8,10 @@ import { ShieldAlert, Lock, AlertCircle, X, ShoppingBag } from 'lucide-react';
 import { PhoneNumberRequiredPage } from './components/PhoneNumberRequiredPage';
 import { useAuthStore } from './store/authStore';
 import { useCartStore } from './store/cartStore';
+import { SEO } from './components/SEO';
 
-const SupportAssistant = React.lazy(() =>
-  import('./components/SupportAssistant').then((module) => ({ default: module.SupportAssistant }))
+const PrimeEliteAI = React.lazy(() =>
+  import('./components/PrimeEliteAI').then((module) => ({ default: module.PrimeEliteAI }))
 );
 
 export const Layout = () => {
@@ -22,7 +23,6 @@ export const Layout = () => {
   const [showUnauthorizedAlert, setShowUnauthorizedAlert] = useState(false);
   const [isQuotaExceeded, setIsQuotaExceeded] = useState(false);
   const [isConnectionFailed, setIsConnectionFailed] = useState(false);
-
   const [loadAssistant, setLoadAssistant] = useState(false);
   
   const isRestrictedRoute = ['/products', '/checkout', '/cart'].some(route => location.pathname.startsWith(route));
@@ -33,13 +33,18 @@ export const Layout = () => {
   const totalCartItems = items.reduce((acc, item) => acc + item.quantity, 0);
   const totalCartValue = items.reduce((acc, item) => acc + (item.price * item.quantity), 0);
 
-  useEffect(() => {
-    // Gracefully defer AI assistant chunk load logic to prevent network/CPU thrashing on initial load
-    const timer = setTimeout(() => {
-      setLoadAssistant(true);
-    }, 3000);
-    return () => clearTimeout(timer);
-  }, []);
+  // Dynamic SEO Configuration
+  const seoConfig = useMemo(() => {
+    const path = location.pathname;
+    
+    if (path === '/') return { title: 'Prime Elite Store | Premium Watches & Smart Devices', description: 'Experience the pinnacle of audio engineering and luxury timepieces. Curated premium electronics for those who demand excellence.' };
+    if (path.startsWith('/products')) return { title: 'Exclusive Collection | Prime Elite Store', description: 'Explore our meticulously curated selection of premium electronics, luxury watches, and high-fidelity audio.' };
+    if (path === '/checkout') return { title: 'Secure Checkout | Prime Elite Store', description: 'Complete your purchase securely. Fast and reliable delivery for premium orders.' };
+    if (path === '/login') return { title: 'Secure Login | Prime Elite Store', description: 'Access your premium account, track orders, and manage wishlist collections.' };
+    if (path === '/admin') return { title: 'Admin Portal | Prime Elite Store', description: 'Secure inventory and order management system.' };
+    
+    return { title: 'Prime Elite Store | Premium Watches & Smart Devices', description: 'Premium Electronics Collection' };
+  }, [location.pathname]);
 
   useEffect(() => {
     if (searchParams.get('unauthorized') === 'true') {
@@ -65,6 +70,14 @@ export const Layout = () => {
     };
   }, []);
 
+  useEffect(() => {
+    // Gracefully defer AI assistant chunk load logic to prevent network/CPU thrashing on initial load
+    const timer = setTimeout(() => {
+      setLoadAssistant(true);
+    }, 2000);
+    return () => clearTimeout(timer);
+  }, []);
+
   const closeAlert = () => {
     setShowUnauthorizedAlert(false);
     // Clean up the URL query parameters
@@ -83,6 +96,7 @@ export const Layout = () => {
 
   return (
     <div className="flex flex-col min-h-screen bg-black">
+      <SEO title={seoConfig.title} description={seoConfig.description} />
       <CinematicIntro />
       
       {/* Real-time Quota Recovery Intercept Banner */}
@@ -144,9 +158,10 @@ export const Layout = () => {
         )}
       </main>
       <Footer />
+
       {loadAssistant && (
         <Suspense fallback={null}>
-          <SupportAssistant hasCart={!hideFloatingCart} />
+          <PrimeEliteAI hasCart={!hideFloatingCart} />
         </Suspense>
       )}
 

@@ -145,7 +145,7 @@ export const Products = () => {
 
     const handleAddToCart = (e: React.MouseEvent) => {
       e.preventDefault();
-      setConfirmProduct(product);
+      navigate(`/products/${product.id}`);
     };
 
     return (
@@ -211,8 +211,8 @@ export const Products = () => {
               className="flex items-center gap-1.5 md:gap-2 text-[9px] md:text-xs font-bold uppercase tracking-wider text-black bg-gold-500 hover:bg-gold-400 border border-gold-500 px-3 py-2 md:px-4 md:py-2 rounded-lg transition-all z-10 whitespace-nowrap shadow-lg shadow-gold-500/20"
             >
               <ShoppingBag size={14} className="md:w-4 md:h-4" />
-              <span className="hidden sm:inline">Add to Cart</span>
-              <span className="sm:hidden">Add</span>
+              <span className="hidden sm:inline">Select Options</span>
+              <span className="sm:hidden">Select</span>
             </button>
           </div>
         </div>
@@ -220,7 +220,7 @@ export const Products = () => {
     );
   });
 
-  if (authLoading || !user) {
+  if (authLoading) {
     return (
       <div className="pt-32 min-h-screen flex justify-center items-center">
         <div className="animate-spin w-8 h-8 border-t-2 border-gold-500 rounded-full"></div>

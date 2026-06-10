@@ -11,7 +11,7 @@ interface SEOProps {
 }
 
 export function SEO({
-  title = 'Prime Elite Store | Premium Watches, Smart Watches, Earbuds & Electronics',
+  title = 'Prime Elite Store',
   description = 'Shop premium watches, smart watches, earbuds, headphones and electronic accessories at Prime Elite Store. High quality products, secure ordering and premium customer support.',
   keywords = 'premium watches, rolex watches, tissot watches, smart watches, earbuds, headphones, electronics store, luxury watches, online watch store india',
   url = 'https://primeelitestore.netlify.app',

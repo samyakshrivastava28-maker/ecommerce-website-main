@@ -295,11 +295,6 @@ export const Auth = () => {
 
   return (
     <div className="pt-32 min-h-screen flex items-center justify-center px-6 pb-20 bg-black">
-      <SEO 
-        title={isLogin ? 'Login | Prime Elite Store' : 'Signup | Prime Elite Store'}
-        description="Login or create an account at Prime Elite Store to discover our luxury collection and manage your premium orders."
-        url="https://primeelitestore.netlify.app/login"
-      />
       <div className="w-full max-w-lg bg-zinc-950/80 p-8 md:p-10 rounded-2xl border border-white/10 backdrop-blur-md">
         
         {/* Toggle Option Tabs - Big and Prominent */}

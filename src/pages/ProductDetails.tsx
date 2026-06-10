@@ -94,7 +94,7 @@ export const ProductDetails = () => {
     fetchProduct();
   }, [id, products]);
 
-  if (authLoading || !user || loading) {
+  if (authLoading || loading) {
     return (
       <div className="pt-32 min-h-screen flex justify-center items-center">
         <div className="animate-spin w-8 h-8 border-t-2 border-gold-500 rounded-full"></div>

@@ -1,141 +1,30 @@
-import emailjsBrowser from '@emailjs/browser';
-
+// Removed unused import
 // EmailJS Keys
-const EMAIL_CONFIG = {
-  signup: {
-    serviceId: import.meta.env.VITE_EMAIL_SIGNUP_SERVICE_ID || 'service_xavwsdd',
-    templateUser: import.meta.env.VITE_EMAIL_SIGNUP_TEMPLATE_USER || 'template_bnv795b',
-    templateAdmin: import.meta.env.VITE_EMAIL_SIGNUP_TEMPLATE_ADMIN || 'template_yov75k3',
-    publicKey: import.meta.env.VITE_EMAIL_SIGNUP_PUBLIC_KEY || 'xdiix4UI5x2P7LVE2'
-  },
-  login: {
-    serviceId: import.meta.env.VITE_EMAIL_LOGIN_SERVICE_ID || 'service_3mc4i0a',
-    templateUser: import.meta.env.VITE_EMAIL_LOGIN_TEMPLATE_USER || 'template_qe2gx2m',
-    templateAdmin: import.meta.env.VITE_EMAIL_LOGIN_TEMPLATE_ADMIN || 'template_8kcg56c',
-    publicKey: import.meta.env.VITE_EMAIL_LOGIN_PUBLIC_KEY || 'z23jLy3RVmEUYUin6'
-  },
-  order: {
-    serviceId: import.meta.env.VITE_EMAIL_ORDER_SERVICE_ID || 'service_a8w9xi7',
-    templateCustomer: import.meta.env.VITE_EMAIL_ORDER_TEMPLATE_CUSTOMER || 'template_pem4aev',
-    templateAdmin: import.meta.env.VITE_EMAIL_ORDER_TEMPLATE_ADMIN || 'template_r5nxgqn',
-    publicKey: import.meta.env.VITE_EMAIL_ORDER_PUBLIC_KEY || 'Buuw2UTdprSoJ3wVu'
-  }
-};
-
-// Helper to prevent duplicate emails across re-renders and reloads using sessionStorage
-// Module-level in-memory lock to guarantee absolute debounce even during rapid parallel executions
-const inMemoryEmailLocks = new Set<string>();
-
-const isEmailRecentlySent = (key: string): boolean => {
-  if (inMemoryEmailLocks.has(key)) return true;
-  inMemoryEmailLocks.add(key);
-  setTimeout(() => inMemoryEmailLocks.delete(key), 60000); // 60s memory lock
-
-  try {
-    const timestampStr = sessionStorage.getItem(key);
-    if (timestampStr) {
-      const timestamp = parseInt(timestampStr, 10);
-      if (Date.now() - timestamp < 60000) { // 60 seconds debounce for session
-        return true;
-      }
-    }
-    sessionStorage.setItem(key, Date.now().toString());
-    return false;
-  } catch (e) {
-    return false; // Fallback if no sessionStorage
-  }
-};
-
 export const sendSignupEmail = async (userName: string, userEmail: string, userPhone: string = '', signupDate: string = '') => {
-  const duplicateKey = `email_lock_signup_${userEmail}`;
-  if (isEmailRecentlySent(duplicateKey)) {
-    console.log('[Email] Prevented duplicate signup email to', userEmail);
-    return;
-  }
-
   try {
-    const templateParams = {
-      user_name: userName,
-      user_email: userEmail,
-      user_phone: userPhone,
-      signup_date: signupDate || new Date().toLocaleString()
-    };
-    
-    // Welcome email (to user)
-    await emailjsBrowser.send(
-      EMAIL_CONFIG.signup.serviceId,
-      EMAIL_CONFIG.signup.templateUser,
-      templateParams,
-      EMAIL_CONFIG.signup.publicKey
-    );
-    
-    // New User email (to admin) - Skip if an Admin is testing signup with their own email
-    const lowerEmail = userEmail.toLowerCase().trim();
-    const isAdminUser = lowerEmail === 'webhub2811@gmail.com' || 
-                        lowerEmail === 'prime.elitestore02@gmail.com' || 
-                        lowerEmail === 'primeelitestore02@gmail.com';
-
-    if (!isAdminUser) {
-      await emailjsBrowser.send(
-        EMAIL_CONFIG.signup.serviceId,
-        EMAIL_CONFIG.signup.templateAdmin,
-        {
-          ...templateParams,
-          admin_email: 'prime.elitestore02@gmail.com'
-        },
-        EMAIL_CONFIG.signup.publicKey
-      );
-    }
-    console.log('[Email] Direct fast signup emails dispatched successfully.');
+    const response = await fetch('/api/email/signup', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ userName, userEmail, userPhone, signupDate: signupDate || new Date().toLocaleString() })
+    });
+    if (!response.ok) throw new Error('Failed to send signup email');
+    console.log('[Email] Server-side signup emails dispatched successfully.');
   } catch (error) {
-    console.error('[Email] Direct browser signup dispatch failed:', error);
+    console.error('[Email] Server signup dispatch failed:', error);
   }
 };
 
 export const sendLoginEmail = async (userName: string, userEmail: string, userPhone: string = '') => {
-  const duplicateKey = `email_lock_login_${userEmail}`;
-  if (isEmailRecentlySent(duplicateKey)) {
-    console.log('[Email] Prevented duplicate login email to', userEmail);
-    return;
-  }
-
   try {
-    const templateParams = {
-      user_name: userName,
-      user_email: userEmail,
-      user_phone: userPhone,
-      login_time: new Date().toLocaleString()
-    };
-    
-    // Welcome Back email (to user)
-    await emailjsBrowser.send(
-      EMAIL_CONFIG.login.serviceId,
-      EMAIL_CONFIG.login.templateUser,
-      templateParams,
-      EMAIL_CONFIG.login.publicKey
-    );
-    
-    // Old User Back email (to admin)
-    const lowerEmail = userEmail.toLowerCase().trim();
-    const isAdminUser = lowerEmail === 'webhub2811@gmail.com' || 
-                        lowerEmail === 'prime.elitestore02@gmail.com' || 
-                        lowerEmail === 'primeelitestore02@gmail.com';
-
-    if (!isAdminUser) {
-      await emailjsBrowser.send(
-        EMAIL_CONFIG.login.serviceId,
-        EMAIL_CONFIG.login.templateAdmin,
-        {
-          ...templateParams,
-          admin_email: 'prime.elitestore02@gmail.com'
-        },
-        EMAIL_CONFIG.login.publicKey
-      );
-    }
-    
-    console.log('[Email] Direct fast login emails dispatched safely.');
+    const response = await fetch('/api/email/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ userName, userEmail, userPhone })
+    });
+    if (!response.ok) throw new Error('Failed to send login email');
+    console.log('[Email] Server-side login emails dispatched safely.');
   } catch (error) {
-    console.error('[Email] Direct browser login dispatch failed:', error);
+    console.error('[Email] Server login dispatch failed:', error);
   }
 };
 
@@ -369,11 +258,6 @@ const formatOrderHtml = (orderData: any, isCustomer = false) => {
 };
 
 export const sendAdminOrderEmail = async (orderData: any) => {
-  const duplicateKey = `email_lock_order_admin_${orderData.orderId || orderData.id || Date.now()}`;
-  if (isEmailRecentlySent(duplicateKey)) {
-    console.log('[Email] Prevented duplicate admin order email');
-    return;
-  }
   const plainTextOrder = formatOrderPlainText(orderData);
   const htmlOrder = formatOrderHtml(orderData, false);
   const itemsHtmlTable = formatOrderJustItemsHtmlTable(orderData);
@@ -417,24 +301,19 @@ export const sendAdminOrderEmail = async (orderData: any) => {
   };
 
   try {
-    await emailjsBrowser.send(
-      EMAIL_CONFIG.order.serviceId,
-      EMAIL_CONFIG.order.templateAdmin,
-      templateParams,
-      EMAIL_CONFIG.order.publicKey
-    );
-    console.log('[Email] Direct fast admin order notification dispatched successfully.');
+    const response = await fetch('/api/email/order', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ type: 'admin', templateParams })
+    });
+    if (!response.ok) throw new Error('Failed to send admin order email');
+    console.log('[Email] Server-side fast admin order notification dispatched successfully.');
   } catch (error) {
-    console.error('[Email] Direct browser admin order dispatch failed:', error);
+    console.error('[Email] Server admin order dispatch failed:', error);
   }
 };
 
 export const sendCustomerConfirmationEmail = async (orderData: any) => {
-  const duplicateKey = `email_lock_order_customer_${orderData.orderId || orderData.id || Date.now()}`;
-  if (isEmailRecentlySent(duplicateKey)) {
-    console.log('[Email] Prevented duplicate customer confirmation email');
-    return;
-  }
   const plainTextOrder = formatOrderPlainText(orderData);
   const htmlOrder = formatOrderHtml(orderData, true);
   const itemsHtmlTable = formatOrderJustItemsHtmlTable(orderData);
@@ -478,15 +357,15 @@ export const sendCustomerConfirmationEmail = async (orderData: any) => {
   };
 
   try {
-    await emailjsBrowser.send(
-      EMAIL_CONFIG.order.serviceId,
-      EMAIL_CONFIG.order.templateCustomer,
-      templateParams,
-      EMAIL_CONFIG.order.publicKey
-    );
-    console.log('[Email] Direct fast customer confirmation email dispatched successfully.');
+    const response = await fetch('/api/email/order', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ type: 'customer', templateParams })
+    });
+    if (!response.ok) throw new Error('Failed to send customer confirmation email');
+    console.log('[Email] Server-side fast customer confirmation email dispatched successfully.');
   } catch (error) {
-    console.error('[Email] Direct browser customer confirmation dispatch failed:', error);
+    console.error('[Email] Server customer confirmation dispatch failed:', error);
   }
 };
 
