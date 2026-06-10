@@ -1,12 +1,31 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { MessageSquare, X } from 'lucide-react';
 import { AnimatePresence, motion } from 'framer-motion';
 
 export const PrimeEliteAI: React.FC<{ hasCart?: boolean }> = ({ hasCart }) => {
   const [isOpen, setIsOpen] = useState(false);
+  const [showPopup, setShowPopup] = useState(false);
+
+  useEffect(() => {
+    // Only show popup if assistant is not open
+    if (isOpen) {
+      setShowPopup(false);
+      return;
+    }
+
+    const interval = setInterval(() => {
+      setShowPopup(true);
+      setTimeout(() => setShowPopup(false), 5000); // hide after 5 seconds
+    }, 15000);
+
+    return () => clearInterval(interval);
+  }, [isOpen]);
 
   const handleToggleAssistant = () => {
     setIsOpen(!isOpen);
+    if (!isOpen) {
+      setShowPopup(false);
+    }
   };
 
   return (
@@ -29,6 +48,29 @@ export const PrimeEliteAI: React.FC<{ hasCart?: boolean }> = ({ hasCart }) => {
               title="Prime Elite AI Assistant"
               allow="microphone; clipboard-write; clipboard-read"
             />
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {showPopup && !isOpen && (
+          <motion.div
+            initial={{ opacity: 0, y: 10, scale: 0.95 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 10, scale: 0.95 }}
+            className="group absolute bottom-[72px] right-0 bg-zinc-900 border border-gold-500/30 text-white p-3 rounded-xl shadow-[0_0_20px_rgba(212,175,55,0.15)] flex flex-col gap-1 w-56 md:w-64 cursor-pointer hover:border-gold-500/50 transition-colors"
+            onClick={handleToggleAssistant}
+          >
+            <div className="flex justify-between items-start">
+              <span className="text-[10px] font-bold text-gold-500 uppercase tracking-widest leading-none">Prime Elite Store Support</span>
+              <button 
+                onClick={(e) => { e.stopPropagation(); setShowPopup(false); }}
+                className="text-zinc-500 hover:text-white transition-colors"
+              >
+                <X size={12} />
+              </button>
+            </div>
+            <p className="text-xs text-zinc-300 font-sans mt-0.5">Need help finding something? Ask our AI assistant.</p>
           </motion.div>
         )}
       </AnimatePresence>

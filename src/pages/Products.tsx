@@ -5,8 +5,10 @@ import { useAuthStore } from '../store/authStore';
 import { useAppStore } from '../store/appStore';
 import { ShoppingBag, Search, Filter, ChevronRight } from 'lucide-react';
 import { Link, useSearchParams, useNavigate } from 'react-router-dom';
+import { motion } from 'framer-motion';
 import { SEO } from '../components/SEO';
 import { useCartStore } from '../store/cartStore';
+import { ProductCard } from '../components/ProductCard';
 
 export const Products = () => {
   const { products, productsLoading: loading, initializeProductsListener } = useAppStore();
@@ -140,85 +142,7 @@ export const Products = () => {
   }, [activeCategory, filteredProducts, sections, products, debouncedQuery, priceFilter]);
 
 
-  const ProductCard = React.memo(({ product }: { product: Product }) => {
-    const [imageLoaded, setImageLoaded] = useState(false);
 
-    const handleAddToCart = (e: React.MouseEvent) => {
-      e.preventDefault();
-      navigate(`/products/${product.id}`);
-    };
-
-    return (
-      <div key={product.id} className="group flex flex-col bg-zinc-950 border border-white/5 rounded-xl pb-3 md:pb-5 overflow-hidden hover:border-gold-500/30 transition-colors w-full h-full min-w-0 md:min-w-[280px]">
-        <Link to={`/products/${product.id}`} className="aspect-square bg-zinc-900 relative overflow-hidden flex items-center justify-center p-2.5 md:p-0">
-           {/* Skeleton Base */}
-           {!imageLoaded && (
-             <div className="absolute inset-0 bg-white/5 animate-pulse" />
-           )}
-           {product.variants && product.variants.length > 0 ? (
-             <img 
-               src={product.variants[0].image} 
-               alt={product.productName} 
-               className={`object-cover w-full h-full rounded-md md:rounded-none group-hover:scale-105 transition-all duration-700 ${imageLoaded ? 'opacity-100' : 'opacity-0'}`} 
-               loading="lazy" 
-               onLoad={() => setImageLoaded(true)}
-             />
-           ) : product.imageUrls && product.imageUrls[0] ? (
-             <img 
-               src={product.imageUrls[0]} 
-               alt={product.productName} 
-               className={`object-cover w-full h-full rounded-md md:rounded-none group-hover:scale-105 transition-all duration-700 ${imageLoaded ? 'opacity-100' : 'opacity-0'}`} 
-               loading="lazy" 
-               onLoad={() => setImageLoaded(true)}
-             />
-           ) : (
-             <span className="text-zinc-800 font-display font-bold text-2xl md:text-4xl text-center px-4">IMAGE</span>
-           )}
-           
-           <div className="absolute top-2 left-2 md:top-4 md:left-4 flex flex-col gap-1 md:gap-2">
-             {product.offerPercentage > 0 && (
-               <span className="bg-gold-500 text-black text-[8px] md:text-[10px] font-bold uppercase tracking-wider px-1.5 py-0.5 md:px-2 md:py-1 rounded-sm z-10 shadow-lg">
-                 -{product.offerPercentage}%
-               </span>
-             )}
-             {product.trending && (
-               <span className="bg-white text-black text-[8px] md:text-[10px] font-bold uppercase tracking-wider px-1.5 py-0.5 md:px-2 md:py-1 rounded-sm z-10 shadow-lg">
-                 HOT
-               </span>
-             )}
-           </div>
-
-           {/* Always visible instruction overlay */}
-           <div className="absolute font-sans bottom-2 left-1/2 -translate-x-1/2 whitespace-nowrap bg-black/70 backdrop-blur-md text-white/90 text-[8px] md:text-[10px] uppercase tracking-widest px-3 py-1.5 rounded-full border border-white/10 shadow-lg pointer-events-none flex items-center justify-center opacity-80 group-hover:opacity-100 transition-opacity">
-             Tap image for more information
-           </div>
-        </Link>
-        
-        <div className="p-3 md:p-5 flex flex-col flex-1">
-          <div className="text-[8px] md:text-[10px] uppercase tracking-widest text-gold-500 mb-1 md:mb-2">{product.category}</div>
-          <Link to={`/products/${product.id}`} className="font-bold text-sm md:text-lg mb-2 md:mb-4 text-white line-clamp-2 hover:text-gold-500 transition-colors">
-            {product.productName}
-          </Link>
-          
-          <div className="mt-auto flex items-end justify-between gap-1 md:gap-2">
-            <div className="flex-1">
-              <div className="text-[10px] md:text-xs text-gray-500 line-through">₹{product.oldPrice?.toLocaleString()}</div>
-              <div className="text-sm md:text-xl font-bold text-white leading-none">₹{product.price?.toLocaleString()}</div>
-            </div>
-            
-            <button 
-              onClick={handleAddToCart}
-              className="flex items-center gap-1.5 md:gap-2 text-[9px] md:text-xs font-bold uppercase tracking-wider text-black bg-gold-500 hover:bg-gold-400 border border-gold-500 px-3 py-2 md:px-4 md:py-2 rounded-lg transition-all z-10 whitespace-nowrap shadow-lg shadow-gold-500/20"
-            >
-              <ShoppingBag size={14} className="md:w-4 md:h-4" />
-              <span className="hidden sm:inline">Select Options</span>
-              <span className="sm:hidden">Select</span>
-            </button>
-          </div>
-        </div>
-      </div>
-    );
-  });
 
   if (authLoading) {
     return (
@@ -367,7 +291,7 @@ export const Products = () => {
                   <div className="flex overflow-x-auto gap-4 md:gap-6 pb-6 snap-x snap-mandatory scrollbar-thin scrollbar-thumb-white/10 scrollbar-track-transparent pr-8 -mr-6 md:pr-0 md:mr-0 pl-1 -ml-1">
                     {section.data.map(product => (
                       <div key={product.id} className="snap-start shrink-0 w-[240px] md:w-[320px]">
-                        <ProductCard product={product} />
+                        <ProductCard product={product} onAddToCart={(p) => navigate(`/products/${p.id}`)} />
                       </div>
                     ))}
                   </div>
@@ -379,7 +303,7 @@ export const Products = () => {
             {sections.every(s => s.data.length === 0) && products.length > 0 && (
               <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-8">
                 {products.map(product => (
-                  <ProductCard key={product.id} product={product} />
+                  <ProductCard key={product.id} product={product} onAddToCart={(p) => navigate(`/products/${p.id}`)} />
                 ))}
               </div>
             )}
@@ -389,7 +313,7 @@ export const Products = () => {
           <div className="flex flex-col gap-8">
             <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-8">
               {activeData.slice(0, visibleItems).map(product => (
-                <ProductCard key={product.id} product={product} />
+                <ProductCard key={product.id} product={product} onAddToCart={(p) => navigate(`/products/${p.id}`)} />
               ))}
             </div>
             {activeData.length > visibleItems && (

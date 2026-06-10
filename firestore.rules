@@ -65,6 +65,11 @@ service cloud.firestore {
       allow write: if isAdmin();
     }
 
+    match /ads/{adId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
     // Validate Order Schema integrity
     function isValidOrder(data) {
       return data.keys().hasAll(['customerName', 'customerEmail', 'customerPhone', 'deliveryAddress', 'paymentMethod', 'totalAmount', 'cartItems', 'createdAt']) &&

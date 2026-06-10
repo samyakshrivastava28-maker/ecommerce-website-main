@@ -1,12 +1,21 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { BRAND } from '../config';
 import { Link } from 'react-router-dom';
 import { ShoppingBag, ChevronRight, Star } from 'lucide-react';
 import { LazyVideo } from '../components/LazyVideo';
 import { SEO } from '../components/SEO';
+import { useAppStore } from '../store/appStore';
 
 export const Home = () => {
+  const { ads, products, initializeProductsListener } = useAppStore();
+  const activeAds = ads.filter(a => a.active);
+
+  useEffect(() => {
+    const unsub = initializeProductsListener();
+    return () => unsub();
+  }, [initializeProductsListener]);
+
   return (
     <div className="w-full">
       {/* Cinematic Hero */}
@@ -80,6 +89,54 @@ export const Home = () => {
         </div>
       </section>
 
+      {/* Dynamic Advertisements */}
+      {activeAds.length > 0 && (
+        <section className="py-12 bg-black border-b border-white/5 relative z-10">
+          <div className="max-w-7xl mx-auto px-6 lg:px-12">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {activeAds.map((ad, i) => (
+                <motion.div
+                  key={ad.id}
+                  initial={{ opacity: 0, y: 30 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true, margin: "-50px" }}
+                  transition={{ duration: 0.6, delay: i * 0.1 }}
+                >
+                  <Link 
+                    to={ad.linkUrl || '/products'} 
+                    className="block group relative overflow-hidden rounded-2xl aspect-[16/9] border border-white/5 bg-zinc-950"
+                  >
+                    {ad.imageUrl?.match(/\.(mp4|webm)$/i) ? (
+                      <LazyVideo
+                        src={ad.imageUrl}
+                        className="w-full h-full object-cover opacity-70 group-hover:scale-105 group-hover:opacity-90 transition-all duration-700 pointer-events-none"
+                      />
+                    ) : (
+                      <img 
+                        src={ad.imageUrl} 
+                        alt={ad.title} 
+                        className="w-full h-full object-cover opacity-70 group-hover:scale-105 group-hover:opacity-90 transition-all duration-700"
+                      />
+                    )}
+                    <div className="absolute inset-0 bg-gradient-to-t from-black via-black/40 to-transparent"></div>
+                    <div className="absolute bottom-0 left-0 p-6 w-full">
+                      <div className="inline-block px-3 py-1 bg-gold-500/10 border border-gold-500/20 text-gold-500 text-[9px] font-bold uppercase tracking-widest rounded-full mb-3">
+                        Featured Offer
+                      </div>
+                      <h3 className="text-xl font-bold text-white mb-2">{ad.title}</h3>
+                      {ad.description && <p className="text-zinc-300 text-xs mb-4 line-clamp-2">{ad.description}</p>}
+                      <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-gold-500 group-hover:text-gold-400 transition-colors">
+                        {ad.buttonText || 'Shop Now'} <ChevronRight size={14} className="group-hover:translate-x-1 transition-transform" />
+                      </div>
+                    </div>
+                  </Link>
+                </motion.div>
+              ))}
+            </div>
+          </div>
+        </section>
+      )}
+
       {/* Featured Categories (Minimalist Concept) */}
       <section className="py-24 bg-black relative">
         <div className="max-w-7xl mx-auto px-6 lg:px-12">
@@ -113,29 +170,36 @@ export const Home = () => {
                 videoUrl: 'https://res.cloudinary.com/dxegdaylf/video/upload/v1779982551/WhatsApp_Video_2026-05-18_at_17.07.22_pamdz3.mp4'
               }
             ].map((col, i) => (
-              <Link 
-                to={`/products?category=${col.categoryKey}`}
+              <motion.div
                 key={col.name} 
-                className="group relative h-96 overflow-hidden rounded-xl border border-white/5 cursor-pointer bg-zinc-950 flex flex-col justify-end p-8 hover:border-gold-500/30 transition-colors"
+                initial={{ opacity: 0, y: 50 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true, margin: "-50px" }}
+                transition={{ duration: 0.8, delay: i * 0.2 }}
               >
-                <div className="absolute inset-0 bg-gradient-to-t from-black via-black/40 to-transparent z-10 pointer-events-none" />
-                <div className="absolute inset-0 bg-gold-500/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500 z-10 pointer-events-none" />
-                
-                {/* Background Looping Video */}
-                <div className="absolute inset-0 z-0 bg-zinc-950 group-hover:scale-105 transition-transform duration-700 ease-out flex items-center justify-center overflow-hidden">
-                  <LazyVideo
-                    src={col.videoUrl}
-                    className="w-full h-full object-cover opacity-50 group-hover:opacity-65 transition-opacity"
-                  />
-                </div>
-                
-                <div className="relative z-20">
-                  <h3 className="text-2xl font-bold text-white mb-2 tracking-wide group-hover:text-gold-400 transition-colors">{col.name}</h3>
-                  <p className="text-xs uppercase tracking-widest text-gold-500/80 font-bold flex items-center gap-1 opacity-90 group-hover:opacity-100 translation-transform duration-300">
-                    Explore Collection <ChevronRight size={12} className="group-hover:translate-x-1 transition-transform" />
-                  </p>
-                </div>
-              </Link>
+                <Link 
+                  to={`/products?category=${col.categoryKey}`}
+                  className="group relative h-96 overflow-hidden rounded-xl border border-white/5 cursor-pointer bg-zinc-950 flex flex-col justify-end p-8 hover:border-gold-500/30 transition-colors w-full inline-block"
+                >
+                  <div className="absolute inset-0 bg-gradient-to-t from-black via-black/40 to-transparent z-10 pointer-events-none" />
+                  <div className="absolute inset-0 bg-gold-500/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500 z-10 pointer-events-none" />
+                  
+                  {/* Background Looping Video */}
+                  <div className="absolute inset-0 z-0 bg-zinc-950 group-hover:scale-105 transition-transform duration-700 ease-out flex items-center justify-center overflow-hidden">
+                    <LazyVideo
+                      src={col.videoUrl}
+                      className="w-full h-full object-cover opacity-50 group-hover:opacity-65 transition-opacity"
+                    />
+                  </div>
+                  
+                  <div className="relative z-20">
+                    <h3 className="text-2xl font-bold text-white mb-2 tracking-wide group-hover:text-gold-400 transition-colors">{col.name}</h3>
+                    <p className="text-xs uppercase tracking-widest text-gold-500/80 font-bold flex items-center gap-1 opacity-90 group-hover:opacity-100 translation-transform duration-300">
+                      Explore Collection <ChevronRight size={12} className="group-hover:translate-x-1 transition-transform" />
+                    </p>
+                  </div>
+                </Link>
+              </motion.div>
             ))}
           </div>
         </div>

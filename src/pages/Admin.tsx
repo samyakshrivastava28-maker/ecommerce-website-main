@@ -69,14 +69,23 @@ export const Admin = () => {
   const [dbStatus, setDbStatus] = useState<'connected' | 'disconnected'>('disconnected');
   
   // Dashboard navigation states
-  // Tab can be 'dashboard' | 'catalog' | 'add' | 'stock_offers' | 'categories' | 'orders'
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'catalog' | 'add' | 'stock_offers' | 'categories' | 'orders'>('dashboard');
+  // Tab can be 'dashboard' | 'catalog' | 'add' | 'stock_offers' | 'categories' | 'orders' | 'ads'
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'catalog' | 'add' | 'stock_offers' | 'categories' | 'orders' | 'ads'>('dashboard');
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
 
   // Orders management states
   const [orders, setOrders] = useState<any[]>([]);
   const [ordersLoading, setOrdersLoading] = useState(false);
   const [confirmingId, setConfirmingId] = useState<string | null>(null);
+  
+  // Ads management states
+  const [ads, setAds] = useState<any[]>([]);
+  const [adTitle, setAdTitle] = useState('');
+  const [adDescription, setAdDescription] = useState('');
+  const [adImageUrl, setAdImageUrl] = useState('');
+  const [adLinkUrl, setAdLinkUrl] = useState('');
+  const [adButtonText, setAdButtonText] = useState('Shop Now');
+  const [adActive, setAdActive] = useState(true);
   
   // Notifications
   const [notification, setNotification] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
@@ -212,6 +221,22 @@ export const Admin = () => {
       console.error('[Admin Order Sync Error]:', error);
       showNotification('error', 'Failed to synchronize live orders feed.');
       setOrdersLoading(false);
+    });
+
+    return () => unsubscribe();
+  }, [isAdminAuthenticated]);
+
+  // Real-time ads observer
+  useEffect(() => {
+    if (!isAdminAuthenticated) return;
+    
+    const q = collection(db, 'ads');
+    console.log('[Firestore Read] Admin initializing ads onSnapshot listener.');
+    const unsubscribe = onSnapshot(q, (snap) => {
+      const fetched = snap.docs.map(d => ({ id: d.id, ...d.data() })) as any[];
+      setAds(fetched);
+    }, (error) => {
+      console.error('[Admin Ads Sync Error]:', error);
     });
 
     return () => unsubscribe();
@@ -570,6 +595,58 @@ export const Admin = () => {
     }
   };
 
+  // Delete an ad permanently
+  const handleDeleteAd = async (adId: string) => {
+    if (!confirm('Are you absolutely certain you want to permanently delete this ad?')) return;
+    const path = `ads/${adId}`;
+    try {
+      console.log(`[Firestore Write] Admin deleting ad ID: ${adId}`);
+      await deleteDoc(doc(db, 'ads', adId));
+      showNotification('success', 'Advertisement deleted successfully.');
+    } catch (error) {
+      handleAdminFirestoreError(error, OperationType.DELETE, path);
+      showNotification('error', 'Failed to delete advertisement.');
+    }
+  };
+
+  // Submit ad
+  const handleAdSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setActionLoading(true);
+
+    if (!adTitle.trim() || !adImageUrl.trim()) {
+      showNotification('error', 'Provide at least a title and an image URL.');
+      setActionLoading(false);
+      return;
+    }
+
+    const payload = {
+      title: adTitle.trim(),
+      description: adDescription.trim(),
+      imageUrl: adImageUrl.trim(),
+      linkUrl: adLinkUrl.trim() || '/',
+      buttonText: adButtonText.trim() || 'Shop Now',
+      active: adActive,
+      createdAt: new Date().toISOString()
+    };
+
+    try {
+      await addDoc(collection(db, 'ads'), payload);
+      showNotification('success', 'Advertisement created successfully.');
+      setAdTitle('');
+      setAdDescription('');
+      setAdImageUrl('');
+      setAdLinkUrl('');
+      setAdButtonText('Shop Now');
+      setAdActive(true);
+    } catch (error) {
+      handleAdminFirestoreError(error, OperationType.CREATE, 'ads');
+      showNotification('error', 'Failed to create advertisement.');
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
   // Permanently delete an order from firestore records
   const handleDeleteOrder = async (orderId: string) => {
     if (!confirm('Are you absolutely certain you want to permanently delete this order record? This cannot be undone.')) return;
@@ -800,7 +877,7 @@ export const Admin = () => {
                   : 'text-gray-400 border-transparent hover:text-white hover:bg-white/5'
               }`}
             >
-              <Activity size={14} /> Analytics Overview
+              <Activity size={14} /> Dashboard
             </button>
             
             <button 
@@ -811,33 +888,8 @@ export const Admin = () => {
                   : 'text-gray-400 border-transparent hover:text-white hover:bg-white/5'
               }`}
             >
-              <span className="flex items-center gap-3"><Package size={14} /> Product Catalog</span>
+              <span className="flex items-center gap-3"><Package size={14} /> Products</span>
               <span className="text-[10px] bg-white/5 text-gray-500 px-1.5 py-0.5 rounded-md font-mono">{products.length}</span>
-            </button>
-
-            <button 
-              onClick={() => { setActiveTab('stock_offers'); setMobileSidebarOpen(false); }}
-              className={`w-full flex items-center justify-between px-4 py-3 rounded-xl text-xs uppercase tracking-wider font-extrabold transition-all border ${
-                activeTab === 'stock_offers' 
-                  ? 'bg-gold-500/10 text-gold-500 border-gold-500/20' 
-                  : 'text-gray-400 border-transparent hover:text-white hover:bg-white/5'
-              }`}
-            >
-              <span className="flex items-center gap-3"><Percent size={14} /> Stock & Campaigns</span>
-              {statistics.lowStock > 0 && (
-                <span className="w-2 h-2 rounded-full bg-rose-500 animate-pulse" />
-              )}
-            </button>
-
-            <button 
-              onClick={() => { setActiveTab('categories'); setMobileSidebarOpen(false); }}
-              className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-xs uppercase tracking-wider font-extrabold transition-all border ${
-                activeTab === 'categories' 
-                  ? 'bg-gold-500/10 text-gold-500 border-gold-500/20' 
-                  : 'text-gray-400 border-transparent hover:text-white hover:bg-white/5'
-              }`}
-            >
-              <Layers size={14} /> Category Space
             </button>
 
             <button 
@@ -848,10 +900,21 @@ export const Admin = () => {
                   : 'text-gray-400 border-transparent hover:text-white hover:bg-white/5'
               }`}
             >
-              <span className="flex items-center gap-3"><FileText size={14} /> Order Logs</span>
+              <span className="flex items-center gap-3"><FileText size={14} /> Orders</span>
               <span className="text-[10px] bg-white/5 text-gray-300 px-1.5 py-0.5 rounded-md font-mono font-bold">
                 {orders.length}
               </span>
+            </button>
+
+            <button 
+              onClick={() => { setActiveTab('ads'); setMobileSidebarOpen(false); }}
+              className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-xs uppercase tracking-wider font-extrabold transition-all border ${
+                activeTab === 'ads' 
+                  ? 'bg-gold-500/10 text-gold-500 border-gold-500/20' 
+                  : 'text-gray-400 border-transparent hover:text-white hover:bg-white/5'
+              }`}
+            >
+              <Tag size={14} /> Ads & Offers
             </button>
 
             <button 
@@ -1252,159 +1315,7 @@ export const Admin = () => {
           </div>
         )}
 
-        {/* =========================================================================
-            PANEL 3: STOCK & INSTANT CAMPAIGNS (OFFERS)
-            ========================================================================= */}
-        {activeTab === 'stock_offers' && (
-          <div className="space-y-6">
-            <div>
-              <h2 className="text-2xl font-light font-display">Stock & Campaigns <span className="font-bold text-gold-500">Manager</span></h2>
-              <p className="text-xs text-zinc-500">Quickly adjust stock balances and live discounts instantly with real-time sync, bypass full forms edits.</p>
-            </div>
 
-            {/* Quick search */}
-            <div className="relative">
-              <input 
-                type="text" 
-                placeholder="Search catalog items to adjust margins..." 
-                value={searchQuery}
-                onChange={e => setSearchQuery(e.target.value)}
-                className="w-full bg-zinc-950 border border-white/10 rounded-xl py-3 px-4 pl-10 text-xs outline-none focus:border-gold-500/40 text-white placeholder-zinc-500"
-              />
-              <Sliders size={14} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-zinc-600" />
-            </div>
-
-            {/* Fast control grid */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {filteredCatalog.map(p => {
-                const image = p.imageUrls?.[0] || p.variants?.[0]?.image || 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=500&auto=format&fit=crop&q=60';
-                return (
-                  <div key={p.id} className="bg-zinc-950 border border-white/5 p-4 rounded-2xl flex flex-col justify-between gap-4">
-                    
-                    {/* Item Identity */}
-                    <div className="flex items-start gap-3">
-                      <div className="w-12 h-12 rounded-lg bg-zinc-900 overflow-hidden shrink-0 border border-white/10">
-                        <img src={image} alt="" className="w-full h-full object-cover" />
-                      </div>
-                      <div className="min-w-0">
-                        <h3 className="text-xs font-bold font-sans text-white uppercase truncate">{p.productName}</h3>
-                        <p className="text-[10px] text-zinc-500 font-mono mt-0.5">{p.category} | Current Price: ₹{p.price.toLocaleString()}</p>
-                      </div>
-                    </div>
-
-                    {/* Stock balance modifier */}
-                    <div className="bg-black/40 border border-white/5 p-3.5 rounded-xl space-y-2">
-                      <div className="flex justify-between items-center text-[10px] uppercase font-mono tracking-wider font-bold">
-                        <span className="text-zinc-500">Stock Balance</span>
-                        <span className={p.stock < 3 ? 'text-rose-400' : 'text-emerald-400'}>{p.stock} Units Left</span>
-                      </div>
-                      <div className="flex items-center gap-3">
-                        <button 
-                          onClick={() => handleQuickStockUpdate(p.id!, p.stock - 1)}
-                          className="w-8 h-8 rounded-lg bg-zinc-900 border border-white/5 text-xs font-extrabold text-[#777] flex items-center justify-center hover:bg-zinc-800 transition-colors"
-                        >
-                          -
-                        </button>
-                        <input 
-                          type="number"
-                          value={p.stock}
-                          onChange={(e) => handleQuickStockUpdate(p.id!, Number(e.target.value))}
-                          className="flex-1 bg-black border border-white/10 rounded-lg py-1 px-2.5 text-center text-xs font-mono text-white font-bold"
-                        />
-                        <button 
-                          onClick={() => handleQuickStockUpdate(p.id!, p.stock + 1)}
-                          className="w-8 h-8 rounded-lg bg-zinc-900 border border-white/5 text-xs font-extrabold text-[#777] flex items-center justify-center hover:bg-zinc-800 transition-colors"
-                        >
-                          +
-                        </button>
-                      </div>
-                    </div>
-
-                    {/* Offer discount campaign slider */}
-                    <div className="bg-black/40 border border-white/5 p-3.5 rounded-xl space-y-2">
-                      <div className="flex justify-between items-center text-[10px] uppercase font-mono tracking-wider font-bold">
-                        <span className="text-zinc-500">Offer Campaign</span>
-                        <span className="text-gold-500 font-black">{p.offerPercentage}% Discount</span>
-                      </div>
-                      <div className="flex items-center gap-3">
-                        <input 
-                          type="range"
-                          min="0"
-                          max="90"
-                          step="5"
-                          value={p.offerPercentage || 0}
-                          onChange={(e) => handleQuickOfferUpdate(p.id!, p.oldPrice || p.price, Number(e.target.value))}
-                          className="flex-1 accent-gold-500 bg-zinc-900"
-                        />
-                        <span className="text-xs font-mono font-bold bg-gold-500/10 text-gold-500 px-2 py-1 rounded border border-gold-500/20">
-                          {p.offerPercentage}% Off
-                        </span>
-                      </div>
-                    </div>
-
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-        )}
-
-        {/* =========================================================================
-            PANEL 4: MANAGE CATEGORIES TAB
-            ========================================================================= */}
-        {activeTab === 'categories' && (
-          <div className="space-y-6">
-            <div>
-              <h2 className="text-2xl font-light font-display">Manage <span className="font-bold text-gold-500">Categories</span></h2>
-              <p className="text-xs text-zinc-500">Define administrative labels and register dynamically loaded web categories.</p>
-            </div>
-
-            {/* Quick Add Custom category */}
-            <div className="bg-zinc-950 p-6 rounded-2xl border border-white/5 space-y-4">
-              <h3 className="text-xs font-mono uppercase tracking-widest text-gold-500 font-bold flex items-center gap-2">
-                <Layers size={14} /> Create Dynamic Category Label
-              </h3>
-              <div className="flex flex-col md:flex-row gap-3">
-                <input 
-                  type="text" 
-                  placeholder="e.g. Ultra Smart, Platinum Chronograph, Wireless EarPods"
-                  value={customCategory}
-                  onChange={(e) => setCustomCategory(e.target.value)}
-                  className="flex-1 bg-black border border-white/10 rounded-xl p-3.5 text-xs outline-none focus:border-gold-500/50 text-white placeholder-zinc-650 font-sans"
-                />
-                <button 
-                  type="button"
-                  onClick={() => handleAddCustomCategoryOnly(customCategory)}
-                  className="bg-gold-500 hover:bg-gold-400 text-black font-mono font-bold uppercase text-[10px] tracking-wider px-6 py-3.5 rounded-xl transition-all font-sans"
-                >
-                  Register Category
-                </button>
-              </div>
-              <p className="text-[10px] text-zinc-500">P.S: Active categories generate matching layout rows and filters automatically when applied.</p>
-            </div>
-
-            {/* Category Space breakdowns */}
-            <div className="space-y-3">
-              <h3 className="text-xs uppercase font-mono tracking-widest text-[#555] font-bold">Dynamic Registered Labels Space</h3>
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                {statistics.categoriesList.map(cat => {
-                  const count = statistics.categoryCounts[cat] || 0;
-                  return (
-                    <div key={cat} className="bg-zinc-950 border border-white/5 p-5 rounded-2xl flex items-center justify-between">
-                      <div className="space-y-1">
-                        <h4 className="text-xs font-bold text-white uppercase font-sans">{cat}</h4>
-                        <span className="text-[10px] font-mono text-zinc-500 block">{count} associated products</span>
-                      </div>
-                      <span className="h-6 px-2 text-[9px] font-mono font-bold rounded-md bg-gold-500/10 border border-gold-500/20 text-gold-500 flex items-center justify-center">
-                        ACTIVE LABEL
-                      </span>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-          </div>
-        )}
 
         {/* =========================================================================
             PANEL — ORDERS: OPERATIONAL ORDER LOGS & APPROVALS
@@ -2230,6 +2141,120 @@ export const Admin = () => {
 
             </div>
 
+          </div>
+        )}
+
+        {/* =========================================================================
+            PANEL — ADS: ADVERTISEMENTS & OFFERS MANAGER
+            ========================================================================= */}
+        {activeTab === 'ads' && (
+          <div className="space-y-6">
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+              <div>
+                <h2 className="text-2xl font-light font-display">Ads & <span className="font-bold text-gold-500">Offers</span></h2>
+                <p className="text-xs text-zinc-500 font-sans">Manage running advertisements, promotional banners, and offers displayed on the homepage.</p>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
+              
+              <div className="xl:col-span-1 space-y-6">
+                <div className="bg-zinc-950 p-6 rounded-2xl border border-white/5">
+                  <h3 className="text-sm font-bold text-white mb-4 uppercase tracking-widest font-mono flex items-center gap-2">
+                    <Tag size={16} className="text-gold-500" /> Create Advertisement
+                  </h3>
+                  
+                  <form onSubmit={handleAdSubmit} className="space-y-4">
+                    <div>
+                      <label className="block text-[10px] uppercase tracking-widest text-[#555] mb-1 font-mono">Internal Title *</label>
+                      <input type="text" value={adTitle} onChange={e => setAdTitle(e.target.value)} required placeholder="e.g. Summer Watch Promotion" className="w-full bg-black border border-white/10 p-3 rounded-xl text-sm focus:border-gold-500 outline-none text-white" />
+                    </div>
+                    
+                    <div>
+                      <label className="block text-[10px] uppercase tracking-widest text-[#555] mb-1 font-mono">Ad Description</label>
+                      <textarea value={adDescription} onChange={e => setAdDescription(e.target.value)} rows={3} placeholder="Promotional subtext" className="w-full bg-black border border-white/10 p-3 rounded-xl text-sm focus:border-gold-500 outline-none text-white resize-none" />
+                    </div>
+
+                    <div>
+                      <label className="block text-[10px] uppercase tracking-widest text-[#555] mb-1 font-mono">Media HTTP/S URL *</label>
+                      <input type="url" value={adImageUrl} onChange={e => setAdImageUrl(e.target.value)} required placeholder="https://..." className="w-full bg-black border border-white/10 p-3 rounded-xl text-sm focus:border-gold-500 outline-none text-white" />
+                    </div>
+
+                    <div>
+                      <label className="block text-[10px] uppercase tracking-widest text-[#555] mb-1 font-mono">Routing Link (e.g. /products?category=Watches)</label>
+                      <input type="text" value={adLinkUrl} onChange={e => setAdLinkUrl(e.target.value)} placeholder="/products?category=Watches" className="w-full bg-black border border-white/10 p-3 rounded-xl text-sm focus:border-gold-500 outline-none text-white" />
+                    </div>
+
+                    <div>
+                      <label className="block text-[10px] uppercase tracking-widest text-[#555] mb-1 font-mono">Button Text</label>
+                      <input type="text" value={adButtonText} onChange={e => setAdButtonText(e.target.value)} placeholder="Shop Now" className="w-full bg-black border border-white/10 p-3 rounded-xl text-sm focus:border-gold-500 outline-none text-white" />
+                    </div>
+
+                    <div className="flex items-center gap-3 bg-black p-3 rounded-xl border border-white/5">
+                      <input type="checkbox" id="adActive" checked={adActive} onChange={e => setAdActive(e.target.checked)} className="accent-gold-500 w-4 h-4 cursor-pointer" />
+                      <label htmlFor="adActive" className="text-xs text-white cursor-pointer font-sans">Active & Publish immediately</label>
+                    </div>
+
+                    <button 
+                      type="submit" 
+                      disabled={actionLoading}
+                      className="w-full gold-gradient-bg text-black p-4 rounded-xl font-black text-xs uppercase tracking-widest hover:scale-[1.02] transition-transform shadow-lg outline-none flex items-center justify-center gap-2 mt-4"
+                    >
+                      {actionLoading ? <RefreshCw size={16} className="animate-spin" /> : <><Sparkles size={16} /> Deploy Campaign</>}
+                    </button>
+                  </form>
+                </div>
+              </div>
+
+              <div className="xl:col-span-2">
+                <div className="bg-zinc-950 rounded-2xl border border-white/5 p-6 h-full min-h-[500px]">
+                  <h3 className="text-sm font-bold text-white mb-6 uppercase tracking-widest font-mono flex items-center gap-2">
+                    <Sliders size={16} className="text-gold-500" /> Active Promotions
+                  </h3>
+
+                  {ads.length === 0 ? (
+                    <div className="text-center text-zinc-500 py-12 flex flex-col items-center">
+                      <EyeOff size={48} className="mb-4 opacity-20" />
+                      <p className="text-sm">No promotional campaigns are currently active.</p>
+                      <p className="text-xs mt-1">Configure an ad in the left panel to display it on the homepage.</p>
+                    </div>
+                  ) : (
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      {ads.map((ad: any) => (
+                        <div key={ad.id} className={`bg-black rounded-xl overflow-hidden border ${ad.active ? 'border-gold-500/30 shadow-[0_0_15px_rgba(212,175,55,0.05)]' : 'border-white/5 opacity-60'}`}>
+                          <div className="h-40 w-full overflow-hidden relative group">
+                            {ad.imageUrl && (
+                              <img src={ad.imageUrl} alt={ad.title} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" />
+                            )}
+                            <div className="absolute inset-0 bg-gradient-to-t from-black via-black/40 to-transparent"></div>
+                            {!ad.active && (
+                              <div className="absolute top-2 right-2 bg-rose-500 text-white text-[9px] font-bold uppercase tracking-widest px-2 py-1 rounded">Inactive</div>
+                            )}
+                          </div>
+                          <div className="p-4 relative">
+                            <h4 className="text-base font-bold text-white mb-1 line-clamp-1">{ad.title}</h4>
+                            <p className="text-xs text-zinc-400 mb-3 line-clamp-2 min-h-[32px]">{ad.description || 'No description provided.'}</p>
+                            
+                            <div className="flex items-center justify-between mt-4">
+                              <span className="text-[10px] font-mono text-zinc-500 bg-white/5 px-2 py-1 rounded truncate max-w-[150px]">Link: {ad.linkUrl}</span>
+                              <button 
+                                onClick={() => handleDeleteAd(ad.id)}
+                                disabled={actionLoading}
+                                className="text-rose-400 hover:text-rose-300 p-1.5 bg-rose-500/10 hover:bg-rose-500/20 rounded transition-colors"
+                                title="Delete Campaign"
+                              >
+                                <Trash2 size={14} />
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+
+            </div>
           </div>
         )}
 

@@ -96,8 +96,29 @@ export const ProductDetails = () => {
 
   if (authLoading || loading) {
     return (
-      <div className="pt-32 min-h-screen flex justify-center items-center">
-        <div className="animate-spin w-8 h-8 border-t-2 border-gold-500 rounded-full"></div>
+      <div className="pt-32 min-h-screen pb-20 max-w-7xl mx-auto px-6 lg:px-12">
+        <div className="mb-8">
+          <div className="w-32 h-4 bg-white/5 animate-pulse rounded"></div>
+        </div>
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-20">
+          <div className="flex flex-col gap-6">
+            <div className="aspect-square bg-white/5 animate-pulse rounded-2xl"></div>
+            <div className="flex gap-4 overflow-hidden">
+              {[1, 2, 3, 4].map(n => (
+                <div key={n} className="w-20 h-20 shrink-0 bg-white/5 animate-pulse rounded-xl"></div>
+              ))}
+            </div>
+          </div>
+          <div className="flex flex-col">
+            <div className="w-24 h-4 bg-white/5 animate-pulse rounded mb-4"></div>
+            <div className="w-3/4 h-12 bg-white/5 animate-pulse rounded mb-4"></div>
+            <div className="flex gap-4 mb-8">
+              <div className="w-24 h-4 bg-white/5 animate-pulse rounded"></div>
+            </div>
+            <div className="w-32 h-10 bg-white/5 animate-pulse rounded mb-8"></div>
+            <div className="w-full h-32 bg-white/5 animate-pulse rounded mt-auto"></div>
+          </div>
+        </div>
       </div>
     );
   }

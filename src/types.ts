@@ -31,6 +31,17 @@ export interface Product {
   specifications?: Specification[];
 }
 
+export interface Ad {
+  id?: string;
+  title: string;
+  description?: string;
+  imageUrl: string;
+  linkUrl: string;
+  buttonText?: string;
+  active: boolean;
+  createdAt?: string;
+}
+
 export interface CartItem extends Product {
   quantity: number;
   selectedColor?: string;
